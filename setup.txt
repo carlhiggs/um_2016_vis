@@ -1,0 +1,95 @@
+:: Urban Monitor 
+:: Interactive visualisation mock up notes - 20190312
+
+:::: NOTES
+::  shp file for the vegetation and land-use data; an excel file of the data with a pivot table set up; and the metadata.
+::  Some key fields:
+::  CompleteData_YN = Y (this filters out incomplete data coverage)
+::  MUA_Ind         = 1 or 2 (this includes only land considered by state gov or ABS as urban).
+::  PerAnyTree       (% tree cover (all veg over 3m)). I would stick with this vegetation measure and not worry about others for now.
+::  MB_Reclass       (Land use code from ABS with the addition of our ‘infrastructure’ code, which is the street and rail corridors)
+::  Public_Private (groups MB_Reclass into either Public, Private or Other. This is in the excel file, but not the shp file for some reason)
+
+:: copy source modified mesh block (mmb) data from shape file to postgresql
+:: Create database and postgis extension using psql
+psql
+CREATE DATABASE um_2016;
+
+\c um_2016;
+CREATE EXTENSION IF NOT EXISTS postgis;
+SELECT postgis_full_version();
+\q
+
+:: Copy modified mesh block (mmb) data to Postgresql database
+ogr2ogr -overwrite -progress -f "PostgreSQL" PG:"host=localhost port=5432 dbname=um_2016" D:/urban_monitor/SYD_for_Carl/MMB2016_Syd_UM2016_v4/MMB2016_Syd_UM2016_v4.shp -nln UM2016_v4_Syd -nlt PROMOTE_TO_MULTI -lco precision=NO
+
+:: import ABS geometries to psql
+:: (if we just union supplied geometries, the result is patchy --- e.g. missing streets etc as holes in LGA aggregation)
+:: (so, for output we'll use usual SA1 and LGA geometries)
+ogr2ogr -overwrite -progress -f "PostgreSQL" PG:"host=localhost port=5432 dbname=um_2016 " "D:/ABS/data/2016/1270055001_asgs_2016_vol_1_geopackage/ASGS 2016 Volume 1 Geopackage/ASGS 2016 Volume 1.gpkg" -lco geometry_name="geom"
+ogr2ogr -overwrite -progress -f "PostgreSQL" PG:"host=localhost port=5432 dbname=um_2016 " "D:/ABS/data/2018/1270055003_asgs_2018_vol_3_aust_gpkg/ASGS 2018 Volume 3.gpkg" -lco geometry_name="geom"
+
+:: Ensure geometry is valid  (not all were)
+:: As per 
+::    https://gis.stackexchange.com/questions/190296/how-to-deal-with-error-geosunaryunion-topologyexception-self-intersection
+:: and
+::    https://gis.stackexchange.com/questions/165151/postgis-update-multipolygon-with-st-makevalid-gives-error/165152
+psql um_2016
+UPDATE um2016_v4_syd SET wkb_geometry=ST_Multi(ST_CollectionExtract(ST_MakeValid(wkb_geometry),3)) WHERE NOT ST_isValid(wkb_geometry);
+    
+    
+:: Create public private mmb lookup table in postgresql, and copy in data 
+CREATE TABLE mmb_public_private 
+(
+mmb_code text,
+public_private text
+);
+
+COPY mmb_public_private FROM 'D:/urban_monitor/SYD_for_Carl/mmb_public_private_lookup.csv' WITH DELIMITER ',' CSV HEADER;
+
+-- Create smaller table with relevant fields, epsg 4326 geom and public private indicator
+DROP TABLE IF EXISTS mmb_2016_pp_epsg4326;
+CREATE TABLE mmb_2016_pp_epsg4326 AS
+SELECT mmb_code       ,
+       mb_code16      ,
+       mb_cat16       ,
+       sa1_main16     ,
+       lga_name17     ,
+       mb_reclass     ,
+       mua_ind        ,
+       peranytree     ,
+       compdatayn     ,
+       public_private ,
+       ST_Transform(wkb_geometry,4326) AS geom
+FROM um2016_v4_syd
+LEFT JOIN mmb_public_private USING (mmb_code);
+
+-- Some geometry has validity issues:
+UPDATE mmb_2016_pp_epsg4326 SET geom=ST_Multi(ST_CollectionExtract(ST_MakeValid(geom),3)) WHERE NOT ST_isValid(geom);
+    
+    
+-- Create SA1 table
+DROP TABLE IF EXISTS um_2016_pp_sa1_epsg4326;
+CREATE TABLE um_2016_pp_sa1_epsg4326 AS
+SELECT sa1_main16     ,
+       string_agg(lga_name17,', '),
+       AVG(peranytree) FILTER (WHERE public_private = 'Public') AS peranytree_public,
+       AVG(peranytree) FILTER (WHERE public_private = 'Private') AS peranytree_private,
+       AVG(peranytree) FILTER (WHERE public_private = 'Other') AS peranytree_other,
+       ST_Union(ST_Transform(abs.geom,4326)) AS geom
+FROM mmb_2016_pp_epsg4326 m
+LEFT JOIN  sa1_2016_aust_full abs ON m.sa1_main16 = abs.sa1_maincode_2016
+GROUP BY sa1_main16;
+
+-- Create LGA table
+DROP TABLE IF EXISTS um_2016_pp_lga_epsg4326;
+CREATE TABLE um_2016_pp_lga_epsg4326 AS
+SELECT '-'::text AS sa1_main16,
+       lga_name17 AS lga,
+       COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Public') , 0) AS peranytree_public,
+       COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Private'), 0) AS peranytree_private,
+       COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Other')  , 0) AS peranytree_other,
+       ST_Union(ST_Transform(abs.geom,4326)) AS geom
+FROM mmb_2016_pp_epsg4326 m
+LEFT JOIN  lga_2018_aust abs ON m.lga_name17 = abs.lga_name_2018
+GROUP BY lga_name17;
