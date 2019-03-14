@@ -71,25 +71,79 @@ UPDATE mmb_2016_pp_epsg4326 SET geom=ST_Multi(ST_CollectionExtract(ST_MakeValid(
 -- Create SA1 table
 DROP TABLE IF EXISTS um_2016_pp_sa1_epsg4326;
 CREATE TABLE um_2016_pp_sa1_epsg4326 AS
-SELECT sa1_main16     ,
-       string_agg(lga_name17,', '),
-       AVG(peranytree) FILTER (WHERE public_private = 'Public') AS peranytree_public,
-       AVG(peranytree) FILTER (WHERE public_private = 'Private') AS peranytree_private,
-       AVG(peranytree) FILTER (WHERE public_private = 'Other') AS peranytree_other,
-       ST_Union(ST_Transform(abs.geom,4326)) AS geom
-FROM mmb_2016_pp_epsg4326 m
-LEFT JOIN  sa1_2016_aust_full abs ON m.sa1_main16 = abs.sa1_maincode_2016
-GROUP BY sa1_main16;
+SELECT sa1_main16, 
+       lga, 
+       a.peranytree_other,
+       a.peranytree_private,
+       a.peranytree_public,
+       ST_Transform(abs.geom,4326) AS geom 
+FROM
+ (SELECT sa1_main16     ,
+         string_agg(lga_name17,', ') AS lga,
+         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Public') , 0) AS peranytree_public,
+         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Private'), 0) AS peranytree_private,
+         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Other')  , 0) AS peranytree_other
+  FROM mmb_2016_pp_epsg4326
+  GROUP BY sa1_main16) a
+LEFT JOIN  sa1_2016_aust_full abs ON a.sa1_main16 = abs.sa1_maincode_2016;
 
 -- Create LGA table
 DROP TABLE IF EXISTS um_2016_pp_lga_epsg4326;
 CREATE TABLE um_2016_pp_lga_epsg4326 AS
-SELECT '-'::text AS sa1_main16,
-       lga_name17 AS lga,
-       COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Public') , 0) AS peranytree_public,
-       COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Private'), 0) AS peranytree_private,
-       COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Other')  , 0) AS peranytree_other,
-       ST_Union(ST_Transform(abs.geom,4326)) AS geom
-FROM mmb_2016_pp_epsg4326 m
-LEFT JOIN  lga_2018_aust abs ON m.lga_name17 = abs.lga_name_2018
-GROUP BY lga_name17;
+SELECT '-'::text AS sa1_main16, 
+       a.lga_name17 AS lga, 
+       a.peranytree_other,
+       a.peranytree_private,
+       a.peranytree_public,
+       ST_Transform(abs.geom,4326) AS geom 
+FROM
+ (SELECT lga_code17,
+         lga_name17,
+         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Public') , 0) AS peranytree_public,
+         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Private'), 0) AS peranytree_private,
+         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Other')  , 0) AS peranytree_other
+  FROM mmb_2016_pp_epsg4326 m
+  GROUP BY lga_code17,lga_name17) a
+LEFT JOIN  lga_2018_aust abs ON a.lga_code17 = abs.lga_code_2018;
+
+-- Create geojson tables (rounded statistics to 2 decimal places)
+DROP TABLE IF EXISTS um_2016_pp_lga_geojson;
+CREATE TABLE um_2016_pp_lga_geojson AS 
+SELECT row_to_json(fc) 
+FROM (SELECT 'FeatureCollection' AS type, 
+             array_to_json(array_agg(f)) AS features  
+      FROM (SELECT 'Feature' AS type, 
+                   ST_AsGeoJSON(geom)::json AS geometry, 
+                   row_to_json((sa1_main16, 
+                                lga, 
+                                ROUND(peranytree_other  ::numeric,2),
+                                ROUND(peranytree_private::numeric,2),
+                                ROUND(peranytree_public ::numeric,2))) AS properties 
+            FROM um_2016_pp_lga_epsg4326 AS lg) AS f) AS fc;
+
+DROP TABLE IF EXISTS um_2016_pp_sa1_geojson;
+CREATE TABLE um_2016_pp_sa1_geojson AS 
+SELECT row_to_json(fc) 
+FROM (SELECT 'FeatureCollection' AS type, 
+             array_to_json(array_agg(f)) AS features  
+      FROM (SELECT 'Feature' AS type, 
+                   ST_AsGeoJSON(geom)::json AS geometry, 
+                   row_to_json((sa1_main16, 
+                                lga, 
+                                ROUND(peranytree_other  ::numeric,2),
+                                ROUND(peranytree_private::numeric,2),
+                                ROUND(peranytree_public ::numeric,2))) AS properties 
+            FROM um_2016_pp_sa1_epsg4326 AS lg) AS f) AS fc;
+
+-- Output geojson files            
+COPY um_2016_pp_sa1_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_sa1.geojson';
+COPY um_2016_pp_lga_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_lga.geojson';
+
+\q
+
+:: Now, manually I uploaded the geojson files to a public drop box folder; can be accessed with link url
+:: LGA: https://www.dropbox.com/s/eu7lfhc8dexujqb/um_2016_pp_lga.geojson?dl=1
+
+
+:: copy features to a geopackage
+ogr2ogr -overwrite -f GPKG D:/urban_monitor/um_2016_vis/um_2016_syd_pp.gpkg  PG:"host=localhost dbname=um_2016" "mmb_2016_pp_epsg4326" "um_2016_pp_lga_epsg4326" "um_2016_pp_sa1_epsg4326" 
