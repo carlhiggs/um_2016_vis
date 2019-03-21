@@ -18,7 +18,7 @@ pal <- colorBin(palette = "BuPu", domain = um_2016_lga$f4, bins = 8)
 
 # pop values
 area_popup <- paste0("<strong>LGA: </strong>", 
-                      um_2016_lga$f2,"%", 
+                      um_2016_lga$f2, 
                       "<br><strong>Public: </strong>", 
                       um_2016_lga$f5,"%", 
                       "<br><strong>Private: </strong>",
