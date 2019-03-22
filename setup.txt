@@ -54,10 +54,14 @@ SELECT mmb_code       ,
        mb_code16      ,
        mb_cat16       ,
        sa1_main16     ,
+       lga_code17,
        lga_name17     ,
        mb_reclass     ,
        mua_ind        ,
        peranytree     ,
+       aranytree     ,
+       fullarea,
+       fularratio,
        compdatayn     ,
        public_private ,
        ST_Transform(wkb_geometry,4326) AS geom
@@ -73,17 +77,20 @@ DROP TABLE IF EXISTS um_2016_pp_sa1_epsg4326;
 CREATE TABLE um_2016_pp_sa1_epsg4326 AS
 SELECT sa1_main16, 
        lga, 
-       a.peranytree_other,
-       a.peranytree_private,
-       a.peranytree_public,
+       100.0 * a.aranytree_public /a.fullarea_sqm  AS peranytree_public,
+       100.0 * a.aranytree_private/a.fullarea_sqm  AS peranytree_private,
+       100.0 * a.aranytree_other /a.fullarea_sqm   AS peranytree_other,
+       fullarea_sqm/10000.0 AS fullarea_ha,
        ST_Transform(abs.geom,4326) AS geom 
 FROM
  (SELECT sa1_main16     ,
          string_agg(lga_name17,', ') AS lga,
-         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Public') , 0) AS peranytree_public,
-         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Private'), 0) AS peranytree_private,
-         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Other')  , 0) AS peranytree_other
+         COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Public') , 0) AS aranytree_public,
+         COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Private'), 0) AS aranytree_private,
+         COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Other')  , 0) AS aranytree_other,
+         SUM(fullarea) AS fullarea_sqm
   FROM mmb_2016_pp_epsg4326
+  WHERE fularratio > 0.9
   GROUP BY sa1_main16) a
 LEFT JOIN  sa1_2016_aust_full abs ON a.sa1_main16 = abs.sa1_maincode_2016;
 
@@ -92,34 +99,57 @@ DROP TABLE IF EXISTS um_2016_pp_lga_epsg4326;
 CREATE TABLE um_2016_pp_lga_epsg4326 AS
 SELECT '-'::text AS sa1_main16, 
        a.lga_name17 AS lga, 
-       a.peranytree_other,
-       a.peranytree_private,
-       a.peranytree_public,
+       100.0 * a.aranytree_public /a.fullarea_sqm  AS peranytree_public,
+       100.0 * a.aranytree_private/a.fullarea_sqm  AS peranytree_private,
+       100.0 * a.aranytree_other /a.fullarea_sqm  AS  peranytree_other,
+       fullarea_sqm/10000.0 AS fullarea_ha,
        ST_Transform(abs.geom,4326) AS geom 
 FROM
  (SELECT lga_code17,
          lga_name17,
-         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Public') , 0) AS peranytree_public,
-         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Private'), 0) AS peranytree_private,
-         COALESCE(AVG(peranytree) FILTER (WHERE public_private = 'Other')  , 0) AS peranytree_other
-  FROM mmb_2016_pp_epsg4326 m
+         COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Public') , 0) AS aranytree_public,
+         COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Private'), 0) AS aranytree_private,
+         COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Other')  , 0) AS aranytree_other,
+         SUM(fullarea) AS fullarea_sqm
+  FROM mmb_2016_pp_epsg4326
+  WHERE fularratio > 0.9
   GROUP BY lga_code17,lga_name17) a
 LEFT JOIN  lga_2018_aust abs ON a.lga_code17 = abs.lga_code_2018;
+
+
+-- Create overall summary table
+DROP TABLE IF EXISTS um_2016_pp_overall;
+CREATE TABLE um_2016_pp_overall AS
+SELECT 'study_region'::text AS study_region,
+       ROUND((100.0 * a.aranytree_public /a.fullarea_sqm)::numeric,2)  AS peranytree_public,
+       ROUND((100.0 * a.aranytree_private/a.fullarea_sqm)::numeric,2)  AS peranytree_private,
+       ROUND((100.0 * a.aranytree_other /a.fullarea_sqm )::numeric,2) AS  peranytree_other,
+       (fullarea_sqm/10000.0)::int AS fullarea_ha
+FROM
+ (SELECT COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Public') , 0) AS aranytree_public,
+         COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Private'), 0) AS aranytree_private,
+         COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Other')  , 0) AS aranytree_other,
+         SUM(fullarea) AS fullarea_sqm
+  FROM mmb_2016_pp_epsg4326
+  WHERE fularratio > 0.9) a;
 
 -- Create geojson tables (rounded statistics to 2 decimal places)
 DROP TABLE IF EXISTS um_2016_pp_lga_geojson;
 CREATE TABLE um_2016_pp_lga_geojson AS 
-SELECT row_to_json(fc) 
+SELECT row_to_json(fc)
 FROM (SELECT 'FeatureCollection' AS type, 
              array_to_json(array_agg(f)) AS features  
       FROM (SELECT 'Feature' AS type, 
                    ST_AsGeoJSON(geom)::json AS geometry, 
-                   row_to_json((sa1_main16, 
-                                lga, 
-                                ROUND(peranytree_other  ::numeric,2),
-                                ROUND(peranytree_private::numeric,2),
-                                ROUND(peranytree_public ::numeric,2))) AS properties 
-            FROM um_2016_pp_lga_epsg4326 AS lg) AS f) AS fc;
+                   (SELECT row_to_json(_) 
+                      FROM (SELECT sa1_main16, 
+                                   lga, 
+                                   ROUND(peranytree_public ::numeric,2) AS peranytree_public,
+                                   ROUND(peranytree_private::numeric,2) AS peranytree_private,
+                                   ROUND(peranytree_other  ::numeric,2) AS peranytree_other,
+                                   ROUND((peranytree_public+peranytree_private+peranytree_other)::numeric,2) AS peranytree_total,
+                                   fullarea_ha::int) as _) AS properties
+            FROM um_2016_pp_lga_epsg4326) AS f) AS fc;
 
 DROP TABLE IF EXISTS um_2016_pp_sa1_geojson;
 CREATE TABLE um_2016_pp_sa1_geojson AS 
@@ -128,16 +158,21 @@ FROM (SELECT 'FeatureCollection' AS type,
              array_to_json(array_agg(f)) AS features  
       FROM (SELECT 'Feature' AS type, 
                    ST_AsGeoJSON(geom)::json AS geometry, 
-                   row_to_json((sa1_main16, 
-                                lga, 
-                                ROUND(peranytree_other  ::numeric,2),
-                                ROUND(peranytree_private::numeric,2),
-                                ROUND(peranytree_public ::numeric,2))) AS properties 
-            FROM um_2016_pp_sa1_epsg4326 AS lg) AS f) AS fc;
+                   (SELECT row_to_json(_) 
+                      FROM (SELECT sa1_main16, 
+                                   lga, 
+                                   ROUND(peranytree_public ::numeric,2) AS peranytree_public,
+                                   ROUND(peranytree_private::numeric,2) AS peranytree_private,
+                                   ROUND(peranytree_other  ::numeric,2) AS peranytree_other,
+                                   ROUND((peranytree_public+peranytree_private+peranytree_other)::numeric,2) AS peranytree_total,
+                                   fullarea_ha::int
+                                   ) as _) AS properties
+            FROM um_2016_pp_sa1_epsg4326) AS f) AS fc;
 
 -- Output geojson files            
 COPY um_2016_pp_sa1_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_sa1.geojson';
 COPY um_2016_pp_lga_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_lga.geojson';
+COPY um_2016_pp_overall TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_overall.csv' CSV DELIMITER ',' HEADER;
 
 \q
 
@@ -147,3 +182,14 @@ COPY um_2016_pp_lga_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_lga.geoj
 
 :: copy features to a geopackage
 ogr2ogr -overwrite -f GPKG D:/urban_monitor/um_2016_vis/um_2016_syd_pp.gpkg  PG:"host=localhost dbname=um_2016" "mmb_2016_pp_epsg4326" "um_2016_pp_lga_epsg4326" "um_2016_pp_sa1_epsg4326" 
+
+
+
+
+
+
+
+aranytree
+allarea  
+areasqm  
+fullarea
