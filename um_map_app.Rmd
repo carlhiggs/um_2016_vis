@@ -147,7 +147,7 @@ server <- function(input, output) {
   observeEvent(input$map_shape_mouseover,{
     data_of_hover$hoverFeature  <- input$map_shape_mouseover
     print(paste(data_of_hover$hoverFeature))
-   # data_of_hover$hoverFeature[1] <- substring(toString(data_of_hover$hoverFeature[1]),1,nchar(data_of_hover$hoverFeature[1])-4)
+    # data_of_hover$hoverFeature[1] <- substring(toString(data_of_hover$hoverFeature[1]),1,nchar(data_of_hover$hoverFeature[1])-4)
   })
   
   output$pieplot=renderPlot({
@@ -192,8 +192,6 @@ server <- function(input, output) {
                 legend.text=c("Public","Private","Other"),
                 args.legend=list(bty = "n", 
                                  horiz=TRUE, 
-                                 x=50,
-                                 xjust=0.5,
                                  yjust=0),
                 sub = "Percent of total area with trees, by land type"
                 )
@@ -210,9 +208,7 @@ server <- function(input, output) {
                 main=toString(area_of_interest),
                 legend.text=c("Public","Private","Other"),
                 args.legend=list(bty = "n", 
-                                 horiz=TRUE, 
-                                 x=25,
-                                 xjust=0.5,
+                                 horiz=TRUE,
                                  yjust=0),
                 sub = "Percent of total area with trees, by land type"
                 )
