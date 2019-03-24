@@ -83,19 +83,23 @@ UPDATE mmb_2016_pp_epsg4326 SET geom=ST_Multi(ST_CollectionExtract(ST_MakeValid(
 DROP TABLE IF EXISTS um_2016_pp_sa1_epsg4326;
 CREATE TABLE um_2016_pp_sa1_epsg4326 AS
 SELECT sa1_main16, 
-       lga, 
-       100.0 * a.aranytree_public /a.fullarea_sqm  AS peranytree_public,
-       100.0 * a.aranytree_private/a.fullarea_sqm  AS peranytree_private,
-       100.0 * a.aranytree_other /a.fullarea_sqm   AS peranytree_other,
+       100.0 * a.aranytree_public /NULLIF(a.fullarea_sqm        ,0) AS peranytree_public_total,
+       100.0 * a.aranytree_private/NULLIF(a.fullarea_sqm        ,0) AS peranytree_private_total,
+       100.0 * a.aranytree_other  /NULLIF(a.fullarea_sqm        ,0) AS peranytree_other_total,
+       100.0 * a.aranytree_public /NULLIF(a.fullarea_public_sqm ,0) AS peranytree_public,
+       100.0 * a.aranytree_private/NULLIF(a.fullarea_private_sqm,0) AS peranytree_private,
+       100.0 * a.aranytree_other  /NULLIF(a.fullarea_other_sqm  ,0) AS peranytree_other,
        fullarea_sqm * 10^(-6) AS fullarea_sqkm,
        area_albers_sqkm,
        ST_Transform(abs.geom,4326) AS geom 
 FROM
- (SELECT sa1_main16     ,
-         string_agg(DISTINCT(lga_name17),', ') AS lga,
+ (SELECT sa1_main16,
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Public') , 0) AS aranytree_public,
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Private'), 0) AS aranytree_private,
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Other')  , 0) AS aranytree_other,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Public') , 0)  AS fullarea_public_sqm,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Private'), 0)  AS fullarea_private_sqm,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Other')  , 0)  AS fullarea_other_sqm,
          SUM(fullarea) AS fullarea_sqm
   FROM mmb_2016_pp_epsg4326
   WHERE fularratio > 0.9
@@ -108,9 +112,12 @@ LEFT JOIN  sa1_2016_aust_full abs ON a.sa1_main16 = abs.sa1_maincode_2016;
 DROP TABLE IF EXISTS um_2016_pp_lga_epsg4326;
 CREATE TABLE um_2016_pp_lga_epsg4326 AS
 SELECT a.lga_name17 AS lga, 
-       100.0 * a.aranytree_public /a.fullarea_sqm  AS peranytree_public,
-       100.0 * a.aranytree_private/a.fullarea_sqm  AS peranytree_private,
-       100.0 * a.aranytree_other /a.fullarea_sqm  AS  peranytree_other,
+       100.0 * a.aranytree_public /NULLIF(a.fullarea_sqm        ,0) AS peranytree_public_total,
+       100.0 * a.aranytree_private/NULLIF(a.fullarea_sqm        ,0) AS peranytree_private_total,
+       100.0 * a.aranytree_other  /NULLIF(a.fullarea_sqm        ,0) AS peranytree_other_total,
+       100.0 * a.aranytree_public /NULLIF(a.fullarea_public_sqm ,0) AS peranytree_public,
+       100.0 * a.aranytree_private/NULLIF(a.fullarea_private_sqm,0) AS peranytree_private,
+       100.0 * a.aranytree_other  /NULLIF(a.fullarea_other_sqm  ,0) AS peranytree_other,
        fullarea_sqm * 10^(-6) AS fullarea_sqkm,
        area_albers_sqkm,
        ST_Transform(abs.geom,4326) AS geom 
@@ -120,6 +127,9 @@ FROM
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Public') , 0) AS aranytree_public,
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Private'), 0) AS aranytree_private,
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Other')  , 0) AS aranytree_other,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Public') , 0)  AS fullarea_public_sqm,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Private'), 0)  AS fullarea_private_sqm,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Other')  , 0)  AS fullarea_other_sqm,
          SUM(fullarea) AS fullarea_sqm
   FROM mmb_2016_pp_epsg4326
   WHERE fularratio > 0.9
@@ -130,9 +140,12 @@ LEFT JOIN  lga_2018_aust abs ON a.lga_code17 = abs.lga_code_2018;
 DROP TABLE IF EXISTS um_2016_pp_ssc_epsg4326;
 CREATE TABLE um_2016_pp_ssc_epsg4326 AS
 SELECT a.ssc_name16 AS ssc, 
-       100.0 * a.aranytree_public /a.fullarea_sqm  AS peranytree_public,
-       100.0 * a.aranytree_private/a.fullarea_sqm  AS peranytree_private,
-       100.0 * a.aranytree_other /a.fullarea_sqm  AS  peranytree_other,
+       100.0 * a.aranytree_public /NULLIF(a.fullarea_sqm        ,0) AS peranytree_public_total,
+       100.0 * a.aranytree_private/NULLIF(a.fullarea_sqm        ,0) AS peranytree_private_total,
+       100.0 * a.aranytree_other  /NULLIF(a.fullarea_sqm        ,0) AS peranytree_other_total,
+       100.0 * a.aranytree_public /NULLIF(a.fullarea_public_sqm ,0) AS peranytree_public,
+       100.0 * a.aranytree_private/NULLIF(a.fullarea_private_sqm,0) AS peranytree_private,
+       100.0 * a.aranytree_other  /NULLIF(a.fullarea_other_sqm  ,0) AS peranytree_other,
        fullarea_sqm * 10^(-6) AS fullarea_sqkm,
        area_albers_sqkm,
        ST_Transform(abs.geom,4326) AS geom 
@@ -142,6 +155,9 @@ FROM
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Public') , 0) AS aranytree_public,
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Private'), 0) AS aranytree_private,
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Other')  , 0) AS aranytree_other,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Public') , 0)  AS fullarea_public_sqm,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Private'), 0)  AS fullarea_private_sqm,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Other')  , 0)  AS fullarea_other_sqm,
          SUM(fullarea) AS fullarea_sqm
   FROM mmb_2016_pp_epsg4326
   WHERE fularratio > 0.9
@@ -154,14 +170,20 @@ LEFT JOIN  ssc_2016_aust abs ON a.ssc_code16 = abs.ssc_code_2016;
 DROP TABLE IF EXISTS um_2016_pp_overall;
 CREATE TABLE um_2016_pp_overall AS
 SELECT 'study_region'::text AS study_region,
-       ROUND((100.0 * a.aranytree_public /a.fullarea_sqm)::numeric,2)  AS peranytree_public,
-       ROUND((100.0 * a.aranytree_private/a.fullarea_sqm)::numeric,2)  AS peranytree_private,
-       ROUND((100.0 * a.aranytree_other /a.fullarea_sqm )::numeric,2) AS  peranytree_other,
+       ROUND((100.0 * a.aranytree_public /NULLIF(a.fullarea_sqm        ,0))::numeric,2) AS peranytree_public_total,
+       ROUND((100.0 * a.aranytree_private/NULLIF(a.fullarea_sqm        ,0))::numeric,2) AS peranytree_private_total,
+       ROUND((100.0 * a.aranytree_other  /NULLIF(a.fullarea_sqm        ,0))::numeric,2) AS peranytree_other_total,
+       ROUND((100.0 * a.aranytree_public /NULLIF(a.fullarea_public_sqm ,0))::numeric,2) AS peranytree_public,
+       ROUND((100.0 * a.aranytree_private/NULLIF(a.fullarea_private_sqm,0))::numeric,2) AS peranytree_private,
+       ROUND((100.0 * a.aranytree_other  /NULLIF(a.fullarea_other_sqm  ,0))::numeric,2) AS peranytree_other,
        fullarea_sqm * 10^(-6) AS fullarea_sqkm
-FROM
- (SELECT COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Public') , 0) AS aranytree_public,
+FROM (SELECT 
+         COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Public') , 0) AS aranytree_public,
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Private'), 0) AS aranytree_private,
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Other')  , 0) AS aranytree_other,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Public') , 0)  AS fullarea_public_sqm,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Private'), 0)  AS fullarea_private_sqm,
+         COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Other')  , 0)  AS fullarea_other_sqm,
          SUM(fullarea) AS fullarea_sqm
   FROM mmb_2016_pp_epsg4326
   WHERE fularratio > 0.9) a;
@@ -174,12 +196,14 @@ FROM (SELECT 'FeatureCollection' AS type,
       FROM (SELECT 'Feature' AS type, 
                    ST_AsGeoJSON(geom)::json AS geometry, 
                    (SELECT row_to_json(_) 
-                      FROM (SELECT sa1_main16, 
-                                   lga, 
-                                   ROUND(peranytree_public ::numeric,2) AS peranytree_public,
-                                   ROUND(peranytree_private::numeric,2) AS peranytree_private,
-                                   ROUND(peranytree_other  ::numeric,2) AS peranytree_other,
-                                   ROUND((peranytree_public+peranytree_private+peranytree_other)::numeric,2) AS peranytree_total,
+                      FROM (SELECT sa1_main16 AS area_id, 
+                                   ROUND(peranytree_public_total ::numeric,2) AS  peranytree_public_total,
+                                   ROUND(peranytree_private_total::numeric,2) AS  peranytree_private_total,
+                                   ROUND(peranytree_other_total  ::numeric,2) AS  peranytree_other_total,
+                                   ROUND(peranytree_public       ::numeric,2) AS  peranytree_public,
+                                   ROUND(peranytree_private      ::numeric,2) AS  peranytree_private,
+                                   ROUND(peranytree_other        ::numeric,2) AS  peranytree_other,
+                                   ROUND((peranytree_public_total+peranytree_private_total+peranytree_other_total)::numeric,2) AS peranytree_total,
                                    fullarea_sqkm::int,
                                    area_albers_sqkm::int
                                    ) as _) AS properties
@@ -194,11 +218,14 @@ FROM (SELECT 'FeatureCollection' AS type,
       FROM (SELECT 'Feature' AS type, 
                    ST_AsGeoJSON(geom)::json AS geometry, 
                    (SELECT row_to_json(_) 
-                      FROM (SELECT lga, 
-                                   ROUND(peranytree_public ::numeric,2) AS peranytree_public,
-                                   ROUND(peranytree_private::numeric,2) AS peranytree_private,
-                                   ROUND(peranytree_other  ::numeric,2) AS peranytree_other,
-                                   ROUND((peranytree_public+peranytree_private+peranytree_other)::numeric,2) AS peranytree_total,
+                      FROM (SELECT lga AS area_id, 
+                                   ROUND(peranytree_public_total ::numeric,2) AS  peranytree_public_total,
+                                   ROUND(peranytree_private_total::numeric,2) AS  peranytree_private_total,
+                                   ROUND(peranytree_other_total  ::numeric,2) AS  peranytree_other_total,
+                                   ROUND(peranytree_public       ::numeric,2) AS  peranytree_public,
+                                   ROUND(peranytree_private      ::numeric,2) AS  peranytree_private,
+                                   ROUND(peranytree_other        ::numeric,2) AS  peranytree_other,
+                                   ROUND((peranytree_public_total+peranytree_private_total+peranytree_other_total)::numeric,2) AS peranytree_total,
                                    fullarea_sqkm::int,
                                    area_albers_sqkm::int
                                    ) as _) AS properties
@@ -213,11 +240,14 @@ FROM (SELECT 'FeatureCollection' AS type,
       FROM (SELECT 'Feature' AS type, 
                    ST_AsGeoJSON(geom)::json AS geometry, 
                    (SELECT row_to_json(_) 
-                      FROM (SELECT ssc, 
-                                   ROUND(peranytree_public ::numeric,2) AS peranytree_public,
-                                   ROUND(peranytree_private::numeric,2) AS peranytree_private,
-                                   ROUND(peranytree_other  ::numeric,2) AS peranytree_other,
-                                   ROUND((peranytree_public+peranytree_private+peranytree_other)::numeric,2) AS peranytree_total,
+                      FROM (SELECT ssc AS area_id, 
+                                   ROUND(peranytree_public_total ::numeric,2) AS  peranytree_public_total,
+                                   ROUND(peranytree_private_total::numeric,2) AS  peranytree_private_total,
+                                   ROUND(peranytree_other_total  ::numeric,2) AS  peranytree_other_total,
+                                   ROUND(peranytree_public       ::numeric,2) AS  peranytree_public,
+                                   ROUND(peranytree_private      ::numeric,2) AS  peranytree_private,
+                                   ROUND(peranytree_other        ::numeric,2) AS  peranytree_other,
+                                   ROUND((peranytree_public_total+peranytree_private_total+peranytree_other_total)::numeric,2) AS peranytree_total,
                                    fullarea_sqkm::int,
                                    area_albers_sqkm::int
                                    ) as _) AS properties
