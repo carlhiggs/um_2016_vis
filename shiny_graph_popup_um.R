@@ -9,7 +9,7 @@ library(geojsonio)
 
 server <- function(input, output) {
   # build data with 2 places
-  um_2016_lga <- geojson_read("um_2016_pp_lga.geojson",what = "sp")
+  um_2016_lga <- geojson_read("um_2016_pp_lga_simplified.geojson",what = "sp")
   # um_2016_ssc <- geojson_read("um_2016_pp_ssc.geojson",what = "sp")
   um_2016_lga@data <- um_2016_lga@data[order(um_2016_lga@data$peranytree_total),]
   um_2016_overall = read.csv("um_2016_pp_overall.csv", header = TRUE)
@@ -74,41 +74,41 @@ server <- function(input, output) {
   output$map <- renderLeaflet({
     leaflet() %>% 
     # leaflet(data = um_2016_lga) %>%
-    addProviderTiles("CartoDB.Positron") %>%
+    addProviderTiles("CartoDB.Positron") %>%    
     addPolygons(data = um_2016_lga,
-                layerId = ~lga,
+                layerId = paste0(um_2016_lga@data$lga,'_tot'),
                 fillOpacity = 0.7, 
                 color = ~pal(peranytree_total), 
                 weight = 1, 
                 popup = area_popup_lga,
                 group=groupNames[1]) %>%
-    # addPolygons(data = um_2016_lga,
-                # layerId = ~lga + 'Public',
-                # fillOpacity = 0.7, 
-                # color = ~pal(peranytree_public), 
-                # weight = 1, 
-                # popup = area_popup_lga,
-                # group=groupNames[2]
-                # # , options = pathOptions(clickable = FALSE)
-                # ) %>%
-    # addPolygons(data = um_2016_lga,
-                # layerId = ~lga + 'Private',
-                # fillOpacity = 0.7, 
-                # color = ~pal(peranytree_private), 
-                # weight = 1, 
-                # popup = area_popup_lga,
-                # group=groupNames[3]
-                # # , options = pathOptions(clickable = FALSE)
-                # ) %>%
-    # addPolygons(data = um_2016_lga,
-                # layerId = ~lga + 'Other',
-                # fillOpacity = 0.7, 
-                # color = ~pal(peranytree_other), 
-                # weight = 1, 
-                # popup = area_popup_lga,
-                # group=groupNames[4]
-                # # , options = pathOptions(clickable = FALSE)
-                # ) %>%
+    addPolygons(data = um_2016_lga,
+                layerId = paste0(um_2016_lga@data$lga,'_pub'),
+                fillOpacity = 0.7,
+                color = ~pal(peranytree_public),
+                weight = 1,
+                popup = area_popup_lga,
+                group=groupNames[2]
+                # , options = pathOptions(clickable = FALSE)
+                ) %>%
+    addPolygons(data = um_2016_lga,
+                layerId = paste0(um_2016_lga@data$lga,'_pri'),
+                fillOpacity = 0.7,
+                color = ~pal(peranytree_private),
+                weight = 1,
+                popup = area_popup_lga,
+                group=groupNames[3]
+                # , options = pathOptions(clickable = FALSE)
+                ) %>%
+    addPolygons(data = um_2016_lga,
+                layerId = paste0(um_2016_lga@data$lga,'_oth'),
+                fillOpacity = 0.7,
+                color = ~pal(peranytree_other),
+                weight = 1,
+                popup = area_popup_lga,
+                group=groupNames[4]
+                # , options = pathOptions(clickable = FALSE)
+                ) %>%
     # define layers and layers tool bar
     addLayersControl(
       baseGroups = groupNames,
@@ -141,6 +141,7 @@ server <- function(input, output) {
   # store the hover
   observeEvent(input$map_shape_mouseover,{
     data_of_hover$hoverFeature  <- input$map_shape_mouseover
+    data_of_hover$hoverFeature[1] <- substring(toString(data_of_hover$hoverFeature[1]),1,nchar(data_of_hover$hoverFeature[1])-4)
     # print(paste0(data_of_hover$hoverFeature))
     # area_of_interest=data_of_hover$hoverFeature[1]
     # area_stats=as.numeric(um_2016_lga@data[um_2016_lga@data[,'lga']==area_of_interest,c('peranytree_public','peranytree_private','peranytree_other')])
@@ -235,16 +236,17 @@ shinyApp(ui = ui, server = server)
 
 
 
-# # Pie graph
-        # area_of_interest = 'Port Stephens'
-        # area_stats = c(5.84,3.07,21.90)
-        # area_labels = c("public (5.84%)","private (3.07%)","other (21.9%)"  
-# pie(x = area_stats,
-    # labels=area_labels, 
-    # col=c('#7fc97f','#beaed4','#fdc086'),
-    # main=area_of_interest,
-    # border = '#ffffff')
-
+# Pie graph
+area_of_interest <-  'Port Stephens'
+area_stats <-  c(5.84,3.07,21.90)
+area_labels <-  c("public","private","other"  )
+colours <- c('#7fc97f','#beaed4','#fdc086')
+pie(x = area_stats,
+    labels=NA, 
+    col=c('#7fc97f','#beaed4','#fdc086'),
+    main=area_of_interest,
+    border = NA)
+legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
 # # Stacked Bar Plot with Colors and Legend
 # head(um_2016_lga@data[order(-um_2016_lga@data$peranytree_total),])  
 
