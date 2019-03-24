@@ -41,12 +41,12 @@ server <- function(input, output) {
   # build data with 2 places
   um_2016_lga <- geojson_read("um_2016_pp_lga_simplified.geojson",what = "sp",stringsAsFactors=FALSE)
   # um_2016_ssc <- geojson_read("um_2016_pp_ssc_simplified.geojson",what = "sp")
-  um_2016_lga@data <- um_2016_lga@data[order(um_2016_lga@data$peranytree_total),]
+  # um_2016_lga@data <- um_2016_lga@data[order(um_2016_lga@data$peranytree_total),]
   um_2016_overall <- read.csv("um_2016_pp_overall.csv", header = TRUE)
   left_inches <-  max(strwidth(um_2016_lga@data [,'area_id'], "inch")+0.4, na.rm = TRUE)
   bar_legend_x <- 6
   bar_legend_y <- 100
-  bar_labels <- um_2016_lga@data[,'area_id']
+  # bar_labels <- um_2016_lga@data[,'area_id']
   colours <- c('#7fc97f','#beaed4','#fdc086')
   legend_domain <- range(0,100)
   pal <- colorNumeric(palette = "RdYlGn", domain = legend_domain)
@@ -159,18 +159,20 @@ server <- function(input, output) {
         pie(x = table(area_stats),
             labels=area_stats, 
            col=colours,
-            main="Tree coverage %\nSydney",
-            border = '#ffffff')
-            legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
+            #main="Tree coverage %\nSydney",
+            border = '#ffffff',
+           sub = "Tree coverage percent within\neach land type")
+           #legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
     }else{
         area_stats=as.numeric(um_2016_lga@data[um_2016_lga@data[,'area_id']==area_of_interest,c('peranytree_public','peranytree_private','peranytree_other')])
         area_labels = c('public','private','other')
         pie(x = table(area_stats),
            labels=area_stats, 
            col=colours,
-           main=toString(area_of_interest),
-           border = NA)
-           legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
+           #main=toString(area_of_interest),
+           border = NA,
+           sub = "Tree coverage percent within\neach land type")
+           #legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
     }
   })
   
@@ -178,31 +180,34 @@ server <- function(input, output) {
   output$barplot=renderPlot({
     area_of_interest=data_of_hover$hoverFeature[1]
     if(is.null(area_of_interest)){
-        par(mai=c(1.02,left_inches,0.82,0.42))
-        barplot(as.numeric(um_2016_overall[,c('peranytree_public_total','peranytree_private_total','peranytree_other_total')]) ,
+        #par(mai=c(1.02,left_inches,0.82,0.42))
+        barplot(t(as.matrix(um_2016_overall[,c('peranytree_public_total','peranytree_private_total','peranytree_other_total')])) ,
                 horiz=TRUE,
                 xlim = c(0,100),
                 col=c('#7fc97f','#beaed4','#fdc086'), 
-                border='#ffffff', 
-                names.arg=bar_labels,
+                border='#ffffff',   
+                axisnames=FALSE,
                 las=1,
+                main="Greater Sydney (full study region)",
                 legend.text=c("Public","Private","Other"),
                 args.legend=list(bty = "n", 
                                  horiz=TRUE, 
                                  x=50,
                                  xjust=0.5,
-                                 yjust=0)
+                                 yjust=0),
+                sub = "Percent of total area with trees, by land type"
                 )
-                title(paste0("Tree area percent of ",toupper('area_id'),"s, by land status."), line=2, adj=0)
+
     }else{
-        par(mai=c(1.02,left_inches,0.82,0.42))
+        #par(mai=c(1.02,left_inches,0.82,0.42))
         barplot(as.matrix(t(um_2016_lga@data[um_2016_lga@data[,'area_id']==area_of_interest, c('peranytree_public_total','peranytree_private_total','peranytree_other_total')])),
                 horiz=TRUE,
                 xlim = c(0,100),
                 col=c('#7fc97f','#beaed4','#fdc086'), 
                 border='#ffffff', 
-                names.arg=replace(as.vector(bar_labels),bar_labels!=area_of_interest,''),
+                axisnames=FALSE,
                 las=1,
+                main=toString(area_of_interest),
                 legend.text=c("Public","Private","Other"),
                 args.legend=list(bty = "n", 
                                  horiz=TRUE, 
@@ -222,8 +227,8 @@ server <- function(input, output) {
 ui <- fluidPage(
   # selectInput("var", label = "Select a variable", choices = c('peranytree_public','peranytree_private','peranytree_other','peranytree_total')),
   br(),
-  column(6,leafletOutput("map")),
-  column(4,plotOutput("pieplot", width="300px"),plotOutput("barplot", width="300px")),
+  column(6,leafletOutput("map",height="600px")),
+  column(4,plotOutput("barplot", width="300px",height="200px"),plotOutput("pieplot", width="300px",height="300px")),
   br()
 )
 
