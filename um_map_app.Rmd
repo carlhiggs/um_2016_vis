@@ -171,9 +171,10 @@ server <- function(input, output) {
     # print(area_of_interest)
     if(is.null(area_of_interest)){
         area_stats=as.numeric(um_2016_overall[,c('peranytree_public','peranytree_private','peranytree_other')])
+        area_stats[is.na(area_stats)]<- 0
         area_labels = c('public','private','other')
-        pie(x = table(area_stats),
-            labels=area_stats, 
+        pie(x = area_stats,
+            labels=NA, 
            col=colours,
             #main="Tree coverage %\nSydney",
             border = '#ffffff',
@@ -181,9 +182,10 @@ server <- function(input, output) {
            #legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
     }else{
         area_stats=as.numeric(um_2016_lga@data[um_2016_lga@data[,'area_id']==area_of_interest,c('peranytree_public','peranytree_private','peranytree_other')])
+        area_stats[is.na(area_stats)]<- 0
         area_labels = c('public','private','other')
-        pie(x = table(area_stats),
-           labels=area_stats, 
+        pie(x = area_stats,
+           labels=NA, 
            col=colours,
            #main=toString(area_of_interest),
            border = NA,
