@@ -265,7 +265,7 @@ COPY um_2016_pp_overall TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_overall.csv'
 
 
 :: copy features to a geopackage
-ogr2ogr -overwrite -f GPKG D:/urban_monitor/um_2016_vis/um_2016_syd_pp.gpkg  PG:"host=localhost dbname=um_2016" "mmb_2016_pp_epsg4326" "um_2016_pp_lga_epsg4326" "um_2016_pp_sa1_epsg4326" 
+ogr2ogr -overwrite -f GPKG D:/urban_monitor/um_2016_vis/um_2016_syd_pp.gpkg  PG:"host=localhost dbname=um_2016" "mmb_2016_pp_epsg4326" "um_2016_pp_lga_epsg4326" "um_2016_pp_sa1_epsg4326" "um_2016_pp_ssc_epsg4326" 
 
 
 

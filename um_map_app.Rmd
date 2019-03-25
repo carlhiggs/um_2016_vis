@@ -21,6 +21,7 @@ library(leaflet)
 library(geojsonio)
 library(knitr)
 library(shiny)
+library(leaflet.esri)
 
 # selectInput("state", label = "Select an indicator: ",
 #            choices = state.abb, selected = "Private")
@@ -52,11 +53,16 @@ server <- function(input, output) {
   pal <- colorNumeric(palette = "RdYlGn", domain = legend_domain)
 
   
-  groupNames <- c(paste0("<span style='color: #000000; font-size: 11pt'><strong>Total</strong></span>"),
+  groupNames <- c(
+                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Total</strong></span>"),
                   paste0("<span style='color: #000000; font-size: 11pt'><strong>Public</strong></span>"),
                   paste0("<span style='color: #000000; font-size: 11pt'><strong>Private</strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Other</strong></span>"))
-  
+                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Other</strong></span>")
+                  )
+  overlay <- c(
+                     paste0('Urban Centres/Localities (UCL, 2016)'),
+                     paste0('Significant Urban Area (SUA, 2016')
+                     )
   # create area_popup
   area_popup_lga <- paste0("<strong>LGA: </strong>", 
                       um_2016_lga$area_id, 
@@ -86,7 +92,8 @@ server <- function(input, output) {
                fillOpacity = 0.7, 
                color = ~pal(peranytree_total), 
                weight = 1, 
-               popup = area_popup_lga)  %>%
+               popup = area_popup_lga,
+               group = groupNames[1])  %>%
                #group=groupNames[1]) %>%
    #addPolygons(data = um_2016_lga,
    #            layerId =  ~lga,
@@ -116,14 +123,23 @@ server <- function(input, output) {
    #            # , options = pathOptions(clickable = FALSE)
    #            ) %>%
     # define layers and layers tool bar
-    #addLayersControl(baseGroups = groupNames,
-    #                 options = layersControlOptions(collapsed = TRUE))%>% ## display legend by default
+    addEsriTiledMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/UCL/MapServer',group=overlay[1]) %>%
+    addEsriTiledMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/SUA/MapServer',group=overlay[2]) %>%
+
+    # addWMSTiles("http://geoserver.nationalmap.nicta.com.au/admin_bnds_abs/ows",
+    #             layers = "admin_bnds:UCL_2011_AUST",
+    #             options = WMSTileOptions(format = "image/png", transparent = TRUE),
+    #             attribution = "ABS 2011, ational Map, Creative Commons Attribution 2.5 Australia (CC BY 2.5 AU)") %>%
+    addLayersControl(baseGroups = groupNames,
+                     overlayGroups = overlay,
+                    options = layersControlOptions(collapsed = TRUE))%>% ## display legend by default
     addScaleBar(position = "bottomleft", options = scaleBarOptions()) %>%
     addLegend("bottomright", 
               pal = pal, 
               values = legend_domain,
               title = "Total % tree coverage",
-              opacity = 0.6)
+              opacity = 0.6)%>% 
+    hideGroup(overlay)
   })
   
   # observe({
@@ -245,4 +261,4 @@ Reproducible Script
 About
 ===================================== 
 
-Based on code from https://jasminedumas.shinyapps.io/Choropleth_Zipcodes/#map
+Insert blurb about the UM project, acknowledgements, stakeholders etc
