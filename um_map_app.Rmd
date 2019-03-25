@@ -14,7 +14,7 @@ runtime: shiny
 
 ```{r setup, include=FALSE}
 # Carl Higgs, RMIT 2019
-# Flexdashboard implementation is based on code from [Jasmine Dumas](https://jasminedumas.shinyapps.io/hartford-crime/)
+# Flexdashboard implementation is based on code from [Jasmine Dumas](https://jasminedumas.shinyapps.io/Choropleth_Zipcodes/)
 # Load packages and initialize data here
 library(flexdashboard)
 library(leaflet)
@@ -37,10 +37,11 @@ An interactive visualisation of tree coverage for local government areas (LGAs) 
 # shiny inputs defined here
 hr()
 
-selectInput("area_scale", "select area scale: ", choices =c('LGA', 'Suburb', 'SA1') ,selected = 'LGA')
-selectInput("urban_filter", "select within-region focus: ", choices =c('urban', 'not urban', 'all') ,selected = 'urban')
+selectInput("area_scale", "Select area scale: ", choices =c('LGA', 'suburb') ,selected = 'LGA')
+selectInput("urban_filter", "Select within-region focus: ", choices =c('urban', 'not urban', 'all') ,selected = 'all')
 
 hr()
+
 
 ```
 
@@ -50,39 +51,47 @@ Column {data-width=600}
     
 ### Map (<i>click region of interest for details</i>)
 ```{r}
+area_list <-  c(suburb = 'ssc', LGA = 'lga')
+active_data <- reactive({
+                         # construct file name based on filter selection
+                         file<- paste0('um_2016_pp_',area_list[input$area_scale],'_',gsub(" ", "_",input$urban_filter),'_simplified.geojson')
+                         # print(paste(file))
+                         active_data <- geojson_read(file,
+                                                     what = "sp",
+                                                     stringsAsFactors=FALSE)
+                         # print(head(active_data))
+                         })
 server <- function(input, output) {
+
+
+data_of_hover <- reactiveValues(hoverFeature=NULL)
+
+output$map <-  renderLeaflet({
+  
+
+  #                print(cat(file))
+
+  # 
   # build data with 2 places
-  um_2016_lga <- geojson_read("um_2016_pp_lga_simplified.geojson",what = "sp",stringsAsFactors=FALSE)
-  um_2016_ssc <- geojson_read("um_2016_pp_ssc_simplified.geojson",what = "sp")
-  # um_2016_lga@data <- um_2016_lga@data[order(um_2016_lga@data$peranytree_total),]
-  um_2016_overall <- read.csv("um_2016_pp_overall.csv", header = TRUE)
-  left_inches <-  max(strwidth(um_2016_lga@data [,'area_id'], "inch")+0.4, na.rm = TRUE)
-  bar_legend_x <- 6
-  bar_legend_y <- 100
-  # bar_labels <- um_2016_lga@data[,'area_id']
-  colours <- c('#7fc97f','#beaed4','#fdc086')
+  # active_data() <- geojson_read("um_2016_pp_lga_all_simplified.geojson",what = "sp",stringsAsFactors=FALSE)
+  # um_2016_ssc <- geojson_read("um_2016_pp_ssc_all_simplified.geojson",what = "sp",stringsAsFactors=FALSE)
+  # active_data()@data <- active_data()@data[order(active_data()@data$peranytree_total),]
+
   legend_domain <- range(0,100)
-  pal <- colorNumeric(palette = "RdYlGn", domain = legend_domain)
+  pal <- colorNumeric(palette = "RdYlGn", domain = active_data()$estimated_population)
   # pal <- colorBin(palette = "RdYlGn", domain=legend_domain, bins = 7, pretty = TRUE,
   #                 na.color = "#808080", alpha = FALSE, reverse = FALSE,
   #                 right = TRUE)
 
   
   groupNames <- c(
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(LGA) Tree coverage % on Public  land </strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(LGA) Tree coverage % on Private land </strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(LGA) Tree coverage % on Other   land </strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(LGA) Tree coverage % on Public  land, relative to all land</strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(LGA) Tree coverage % on Private land, relative to all land</strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(LGA) Tree coverage % on Other   land, relative to all land</strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(LGA) Overall tree coverage %</strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(Suburb) Tree coverage % on Public  land </strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(Suburb) Tree coverage % on Private land </strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(Suburb) Tree coverage % on Other   land </strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(Suburb) Tree coverage % on Public  land, relative to all land</strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(Suburb) Tree coverage % on Private land, relative to all land</strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(Suburb) Tree coverage % on Other   land, relative to all land</strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>(Suburb) Overall tree coverage %</strong></span>")
+                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Public  land </strong></span>"),
+                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Private land </strong></span>"),
+                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Other   land </strong></span>"),
+                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Public  land, relative to all land</strong></span>"),
+                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Private land, relative to all land</strong></span>"),
+                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Other   land, relative to all land</strong></span>"),
+                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Overall tree coverage %</strong></span>")
                   )
   overlay <- c(
                      paste0('Urban Centres/Localities (UCL, 2016)'),
@@ -103,119 +112,58 @@ server <- function(input, output) {
 '.tg .note{font-style:italic;font-size:xx-small;text-align:left;vertical-align:top}',
 '</style>',
 '<table class="tg"><tr><td class="area" colspan="2">',
-um_2016_lga$area_id,
-' (LGA)',
+active_data()$area_id,
 '</td></tr><tr><td class="indicator" colspan="2">',
 'Tree coverage %',
 '</td></tr><tr><td class="tg-xolv">',
 '... on public land',
  '</td><td class="result">',
-round(um_2016_lga$peranytree_public,1),"%",
+round(active_data()$peranytree_public,1),"%",
 '</td></tr><tr><td class="tg-xolv">',
 '...on private land',
 '</td><td class="result">',
-round(um_2016_lga$peranytree_private,1),"%",
+round(active_data()$peranytree_private,1),"%",
 '</td></tr><tr><td class="tg-xolv">',
 '...on other land',
 '</td><td class="result">',
-round(um_2016_lga$peranytree_other,1),"%",
+round(active_data()$peranytree_other,1),"%",
 '</td></tr><tr colspan="2"><td>&nbsp</td></tr><tr><td class="indicator" colspan="2">',
 'Tree coverage %, relative to LGA area*',
 '</td></tr><tr><td class="tg-xolv">',
 '... on public land',
  '</td><td class="result">',
-round(um_2016_lga$peranytree_public_total,1),"%",
+round(active_data()$peranytree_public_total,1),"%",
 '</td></tr><tr><td class="tg-xolv">',
 '...on private land',
 '</td><td class="result">',
-round(um_2016_lga$peranytree_private_total,1),"%",
+round(active_data()$peranytree_private_total,1),"%",
 '</td></tr><tr><td class="tg-xolv">',
 '...on other land',
 '</td><td class="result">',
-round(um_2016_lga$peranytree_other_total,1),"%",
+round(active_data()$peranytree_other_total,1),"%",
 '</td></tr><tr><td class="tg-xolv">',
 '... overall',
 '</td><td class="result">',
-round(um_2016_lga$peranytree_total,1),"%",
+round(active_data()$peranytree_total,1),"%",
 '</td></tr><tr colspan="2"><td>&nbsp</td></tr><tr><td class="indicator">',
 'Data coverage area (km<sup>2</sup>)*',
 '</td><td class="result">',
- um_2016_lga$fullarea_sqkm,
+ active_data()$fullarea_sqkm,
 '</td></tr><tr><td class="indicator">',
 'Total area (km<sup>2</sup>)',
 '</td><td class="result">',
- um_2016_lga$area_albers_sqkm,
+ active_data()$area_albers_sqkm,
 '</td></tr><tr><td class="note" colspan="2">',
 '* only data coverage area is used as basis for percentage calculations.<br> Modified Mesh Blocks upon which LGA estimates are based were restricted to include only those with data coverage of 90% or greater',
 '</td></tr></table>')
-
-  
- area_popup_ssc <- paste0(
-'<style type="text/css">',
-'.tg  {border:none;border-spacing:0;}',
-'.tg td{font-family:Arial, sans-serif;font-size:14px;padding:0px 10px;overflow:hidden;word-break:normal;}',
-'.tg .string_result{font-weight:bold;text-align:left;vertical-align:top}',
-'.tg .indicator{font-style:italic;border-color:#efefef;text-align:left;vertical-align:top}',
-'.tg .subindicator{text-align:right;vertical-align:top}',
-'.tg .area{font-weight:bold;text-align:left;vertical-align:top}',
-'.tg .result{text-align:right;vertical-align:middle}',
-'.tg .note{font-style:italic;font-size:xx-small;text-align:left;vertical-align:top}',
-'</style>',
-'<table class="tg"><tr><td class="area" colspan="2">',
-um_2016_ssc$area_id,
-' (suburb)',
-'</td></tr><tr><td class="indicator" colspan="2">',
-'Tree coverage %',
-'</td></tr><tr><td class="tg-xolv">',
-'... on public land',
- '</td><td class="result">',
-round(um_2016_ssc$peranytree_public,1),"%",
-'</td></tr><tr><td class="tg-xolv">',
-'...on private land',
-'</td><td class="result">',
-round(um_2016_ssc$peranytree_private,1),"%",
-'</td></tr><tr><td class="tg-xolv">',
-'...on other land',
-'</td><td class="result">',
-round(um_2016_ssc$peranytree_other,1),"%",
-'</td></tr><tr colspan="2"><td>&nbsp</td></tr><tr><td class="indicator" colspan="2">',
-'Tree coverage %, relative to LGA area*',
-'</td></tr><tr><td class="tg-xolv">',
-'... on public land',
- '</td><td class="result">',
-round(um_2016_ssc$peranytree_public_total,1),"%",
-'</td></tr><tr><td class="tg-xolv">',
-'...on private land',
-'</td><td class="result">',
-round(um_2016_ssc$peranytree_private_total,1),"%",
-'</td></tr><tr><td class="tg-xolv">',
-'...on other land',
-'</td><td class="result">',
-round(um_2016_ssc$peranytree_other_total,1),"%",
-'</td></tr><tr><td class="tg-xolv">',
-'... overall',
-'</td><td class="result">',
-round(um_2016_ssc$peranytree_total,1),"%",
-'</td></tr><tr colspan="2"><td>&nbsp</td></tr><tr><td class="indicator">',
-'Data coverage area (km<sup>2</sup>)*',
-'</td><td class="result">',
- um_2016_ssc$fullarea_sqkm,
-'</td></tr><tr><td class="indicator">',
-'Total area (km<sup>2</sup>)',
-'</td><td class="result">',
- um_2016_ssc$area_albers_sqkm,
-'</td></tr><tr><td class="note" colspan="2">',
-'* only data coverage area is used as basis for percentage calculations.<br> Modified Mesh Blocks upon which suburb estimates are based were restricted to include only those with data coverage of 90% or greater',
-'</td></tr></table>')
    
-  data_of_hover <- reactiveValues(hoverFeature=NULL)
+  
   
   # Leaflet map with 2 markers
-  output$map <- renderLeaflet({
-    leaflet() %>% 
-    # leaflet(data = um_2016_lga) %>%
+  leaflet() %>% 
+    # leaflet(data = active_data()) %>%
     addProviderTiles("CartoDB.Positron") %>%
-   addPolygons(data = um_2016_lga,
+   addPolygons(data = active_data(),
               layerId =  ~paste0(area_id,'_spub'),
               fillOpacity = 0.7,
               color = ~pal(peranytree_public),
@@ -223,7 +171,7 @@ round(um_2016_ssc$peranytree_total,1),"%",
               popup = area_popup_lga,
               group=groupNames[1]
               ) %>%
-   addPolygons(data = um_2016_lga,
+   addPolygons(data = active_data(),
                layerId = ~paste0(area_id,'_spri'),
               fillOpacity = 0.7,
               color = ~pal(peranytree_private),
@@ -231,7 +179,7 @@ round(um_2016_ssc$peranytree_total,1),"%",
               popup = area_popup_lga,
               group=groupNames[2]
               ) %>%
-   addPolygons(data = um_2016_lga,
+   addPolygons(data = active_data(),
                layerId = ~paste0(area_id,'_soth'),
               fillOpacity = 0.7,
               color = ~pal(peranytree_other),
@@ -240,7 +188,7 @@ round(um_2016_ssc$peranytree_total,1),"%",
               group=groupNames[3]
               ) %>%
               
-   addPolygons(data = um_2016_lga,
+   addPolygons(data = active_data(),
               layerId =  ~paste0(area_id,'_tpub'),
               fillOpacity = 0.7,
               color = ~pal(peranytree_public_total),
@@ -248,7 +196,7 @@ round(um_2016_ssc$peranytree_total,1),"%",
               popup = area_popup_lga,
               group=groupNames[4]
               ) %>%
-   addPolygons(data = um_2016_lga,
+   addPolygons(data = active_data(),
                layerId = ~paste0(area_id,'_tpri'),
               fillOpacity = 0.7,
               color = ~pal(peranytree_private_total),
@@ -256,7 +204,7 @@ round(um_2016_ssc$peranytree_total,1),"%",
               popup = area_popup_lga,
               group=groupNames[5]
               ) %>%
-   addPolygons(data = um_2016_lga,
+   addPolygons(data = active_data(),
                layerId = ~paste0(area_id,'_toth'),
               fillOpacity = 0.7,
               color = ~pal(peranytree_other_total),
@@ -264,69 +212,13 @@ round(um_2016_ssc$peranytree_total,1),"%",
               popup = area_popup_lga,
               group=groupNames[6]
               ) %>%
-   addPolygons(data = um_2016_lga,
+   addPolygons(data = active_data(),
                layerId = ~paste0(area_id,'_ttot'),
                fillOpacity = 0.7, 
                color = ~pal(peranytree_total), 
                weight = 1, 
                popup = area_popup_lga,
                group = groupNames[7])  %>%
-   addPolygons(data = um_2016_ssc,
-              layerId =  ~paste0(area_id,'_spub'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_public),
-              weight = 1,
-              popup = area_popup_ssc,
-              group=groupNames[8]
-              ) %>%
-   addPolygons(data = um_2016_ssc,
-               layerId = ~paste0(area_id,'_spri'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_private),
-              weight = 1,
-              popup = area_popup_ssc,
-              group=groupNames[9]
-              ) %>%
-   addPolygons(data = um_2016_ssc,
-               layerId = ~paste0(area_id,'_soth'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_other),
-              weight = 1,
-              popup = area_popup_ssc,
-              group=groupNames[10]
-              ) %>%
-              
-   addPolygons(data = um_2016_ssc,
-              layerId =  ~paste0(area_id,'_tpub'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_public_total),
-              weight = 1,
-              popup = area_popup_ssc,
-              group=groupNames[11]
-              ) %>%
-   addPolygons(data = um_2016_ssc,
-               layerId = ~paste0(area_id,'_tpri'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_private_total),
-              weight = 1,
-              popup = area_popup_ssc,
-              group=groupNames[12]
-              ) %>%
-   addPolygons(data = um_2016_ssc,
-               layerId = ~paste0(area_id,'_toth'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_other_total),
-              weight = 1,
-              popup = area_popup_ssc,
-              group=groupNames[13]
-              ) %>%
-   addPolygons(data = um_2016_ssc,
-               layerId = ~paste0(area_id,'_ttot'),
-               fillOpacity = 0.7, 
-               color = ~pal(peranytree_total), 
-               weight = 1, 
-               popup = area_popup_ssc,
-               group = groupNames[14])  %>%
     # define layers and layers tool bar
     addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/UCL/MapServer',group=overlay[1]) %>%
     addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/SUA/MapServer',group=overlay[2]) %>%
@@ -346,80 +238,53 @@ round(um_2016_ssc$peranytree_total,1),"%",
               title = "Total % tree coverage",
               opacity = 0.6)%>% 
     hideGroup(overlay)
-  })
   
-  # # store the click
-  # observeEvent(input$map_shape_click,{
-    # data_of_click$clickedMarker  <- input$map_shape_click
-    # # print(paste0(data_of_click$clickedMarker))
-  # })
-  # store the hover
-  observeEvent(input$map_shape_mouseover,{
+
+  
+})
+observeEvent(input$map_shape_mouseover,{
     data_of_hover$hoverFeature  <- input$map_shape_mouseover
-    print(paste(data_of_hover$hoverFeature))
     data_of_hover$hoverFeature[1] <- substring(toString(data_of_hover$hoverFeature[1]),1,nchar(data_of_hover$hoverFeature[1])-5)
   })
-  
-  output$pieplot=renderPlot({
-    area_of_interest=data_of_hover$hoverFeature[1]
-    # print(area_of_interest)
-    if(is.null(area_of_interest)){
-        area_stats=as.numeric(um_2016_overall[,c('peranytree_public','peranytree_private','peranytree_other')])
-        area_stats[is.na(area_stats)]<- 0
-        area_labels = c('public','private','other')
-        pie(x = area_stats,
-            labels=NA, 
-           col=colours,
-            #main="Tree coverage %\nSydney",
-            border = '#ffffff',
-           sub = "... on public, private or other land")
-           #legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
-    }else{
-        area_stats=as.numeric(um_2016_lga@data[um_2016_lga@data[,'area_id']==area_of_interest,c('peranytree_public','peranytree_private','peranytree_other')])
-        area_stats[is.na(area_stats)]<- 0
-        area_labels = c('public','private','other')
-        pie(x = area_stats,
-           labels=NA, 
-           col=colours,
-           #main=toString(area_of_interest),
-           border = NA,
-           sub = "... on public, private or other land")
-           #legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
-    }
-  })
-  
-  # Make a barplot or scatterplot depending of the selected point
-  output$barplot=renderPlot({
+
+um_2016_overall <- read.csv("um_2016_pp_overall.csv", header = TRUE)
+# left_inches <-  max(strwidth(active_data()@data [,'area_id'], "inch")+0.4, na.rm = TRUE)
+bar_legend_x <- 6
+bar_legend_y <- 100
+# bar_labels <- active_data()@data[,'area_id']
+colours <- c('#7fc97f','#beaed4','#fdc086')
+
+# Make a barplot or scatterplot depending of the selected point
+output$barplot=renderPlot({
     area_of_interest=data_of_hover$hoverFeature[1]
     if(is.null(area_of_interest)){
-        #par(mai=c(1.02,left_inches,0.82,0.42))
         barplot(t(as.matrix(um_2016_overall[,c('peranytree_public_total','peranytree_private_total','peranytree_other_total')])) ,
                 horiz=TRUE,
                 xlim = c(0,100),
-                col=c('#7fc97f','#beaed4','#fdc086'), 
-                border='#ffffff',   
+                col=c('#7fc97f','#beaed4','#fdc086'),
+                border='#ffffff',
                 axisnames=FALSE,
                 las=1,
                 main="Tree coverage percentage:\nGreater Sydney (full study region)\n  ",
                 legend.text=c("Public","Private","Other"),
-                args.legend=list(bty = "n", 
-                                 horiz=TRUE, 
+                args.legend=list(bty = "n",
+                                 horiz=TRUE,
                                  yjust=0),
                 sub = "... overall, by public, private or other land"
                 )
 
     }else{
-        #par(mai=c(1.02,left_inches,0.82,0.42))
-        barplot(as.matrix(t(um_2016_lga@data[um_2016_lga@data[,'area_id']==area_of_interest, c('peranytree_public_total','peranytree_private_total','peranytree_other_total')])),
+        barplot(as.matrix(t(active_data()@data[active_data()@data[,'area_id']==area_of_interest,           
+                            c('peranytree_public_total','peranytree_private_total','peranytree_other_total')])),
                 horiz=TRUE,
                 xlim = c(0,100),
-                col=c('#7fc97f','#beaed4','#fdc086'), 
-                border='#ffffff', 
+                col=c('#7fc97f','#beaed4','#fdc086'),
+                border='#ffffff',
                 axisnames=FALSE,
                 las=1,
                 main=paste0('Tree coverage percentage:\n',toString(area_of_interest),'\n  '),
                 legend.text=c("Public","Private","Other"),
-                args.legend=list(bty = "n", 
+                args.legend=list(bty = "n",
                                  horiz=TRUE,
                                  yjust=0),
                 sub = "... overall, by public, private or other land"
@@ -428,18 +293,39 @@ round(um_2016_ssc$peranytree_total,1),"%",
   })
 
 
-  
-}
-
-
+  output$pieplot=renderPlot({
+    area_of_interest=data_of_hover$hoverFeature[1]
+    # print(area_of_interest)
+    if(is.null(area_of_interest)){
+        area_stats=as.numeric(um_2016_overall[,c('peranytree_public','peranytree_private','peranytree_other')])
+        area_stats[is.na(area_stats)]<- 0
+        area_labels = c('public','private','other')
+        pie(x = area_stats,
+            labels=NA,
+           col=colours,
+            #main="Tree coverage %\nSydney",
+            border = '#ffffff',
+           sub = "... on public, private or other land")
+           #legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
+    }else{
+        area_stats=as.numeric(active_data()@data[active_data()@data[,'area_id']==area_of_interest,c('peranytree_public','peranytree_private','peranytree_other')])
+        area_stats[is.na(area_stats)]<- 0
+        area_labels = c('public','private','other')
+        pie(x = area_stats,
+           labels=NA,
+           col=colours,
+           #main=toString(area_of_interest),
+           border = NA,
+           sub = "... on public, private or other land")
+           #legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
+    }
+  })
+  }
 ui <- fluidPage(
-  # tags$head(
-  #   tags$link(rel = "stylesheet", type = "text/css", href = "table_style.css")
-  # ),
   # selectInput("var", label = "Select a variable", choices = c('peranytree_public','peranytree_private','peranytree_other','peranytree_total')),
   br(),
-  column(6,leafletOutput("map",height="600px")),
-  column(4,plotOutput("barplot", width="300px",height="200px"),plotOutput("pieplot", width="300px",height="300px")),
+  column(8,leafletOutput("map")),
+  column(4,plotOutput("barplot", height ="200px",width="300px"),plotOutput("pieplot", width="300px")),
   br()
 )
 
