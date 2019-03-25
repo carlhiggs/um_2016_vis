@@ -36,7 +36,7 @@ An interactive visualisation of tree coverage for local government areas (LGAs) 
 Column {data-width=600}
 -------------------------------------
     
-### Map
+### Map (<i>click region of interest for details</i>)
 ```{r}
 server <- function(input, output) {
   # build data with 2 places
