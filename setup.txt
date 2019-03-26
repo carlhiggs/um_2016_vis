@@ -547,8 +547,8 @@ FROM
   GROUP BY ssc_code16,ssc_name16) a;
 
 -- Create overall summary table
-DROP TABLE IF EXISTS um_2016_pp_overall_urban;
-CREATE TABLE um_2016_pp_overall_urban AS
+DROP TABLE IF EXISTS um_2016_pp_overall_not_urban;
+CREATE TABLE um_2016_pp_overall_not_urban AS
 SELECT 'study_region'::text AS study_region,
        ROUND((100.0 * a.aranytree_public /NULLIF(a.fullarea_sqm        ,0))::numeric,2) AS peranytree_public_total,
        ROUND((100.0 * a.aranytree_private/NULLIF(a.fullarea_sqm        ,0))::numeric,2) AS peranytree_private_total,

@@ -1,8 +1,10 @@
 File,Description
-mmb_public_private_lookup.csv,"Look up table for modified mesh blocks for public, private, and other status"
-setup.txt,"Code with comments for ingesting supplied data, matching modified Mesh Blocks with the required public-private field.  This uses ogr2ogr from the gdal4win distribution, and Postgresql (9.6) with Postgis from the windows command prompt, as well as seperately downloaded ABS administrative boundaries."
-um_2016_syd_pp.gpkg,"A geopackage generated using the above setup code.  Contains the features: um2016_v4_syd (the supplied modified mesh block shape file missing public status); mmb_2016pp_epsg4326 (modified mesh blocks, with area codes, public status, and required fields suggested by JH in e-mail) ; um_2016_pp_lga_epsg4326 (45 LGA names, with percent public, percent private, percent other, and LGA geometry); um_2016_pp_sa1_epsg4326 (26100 SA1s, with LGA summary, percent public, percent private and percent other, and SA1 geometry).  "
-um_2016_pp_lga.geojson,geojson text file representation of the um_2016_pp_lga_epsg4326 LGA feature from the um_2016_syd_pp.gpkg Geopackage
-um_2016_pp_sa1.geojson,geojson text file representation of the um_2016_pp_sa1_epsg4326 SA1 feature from the um_2016_syd_pp.gpkg Geopackage
-um_map.R,sketch code for a basic choropleth map using R
-um_map_app.Rmd,sketch code for a basic choropleth web app using R Shiny (incomplete)
+UM2016-UM2016-Visualisation-260319-0505.pdf,project brief
+setup.txt,a text file describing the set up process used to derive the data used in the app (using ogr2ogr and postgresql with postgis)
+um_map_app.Rmd,"the app (an R markdown document, best run from within R studio by clicking 'Run document'.  Project dependencies, including rmarkdown, shiny and leaflet will have to be installed."
+data,geojson and csv data files used in the app are located here
+file_description.csv,this file
+um_2016_vis.Rproj,R project document
+.RData,ignore this
+.Rhistory,ignore this
+.Rproj.user,ignore this
