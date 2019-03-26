@@ -251,7 +251,9 @@ observeEvent(input$map_shape_mouseover,{
     data_of_hover$hoverFeature  <- input$map_shape_mouseover
     data_of_hover$hoverFeature[1] <- substring(toString(data_of_hover$hoverFeature[1]),1,nchar(data_of_hover$hoverFeature[1])-5)
   })
-
+observeEvent(input$map_shape_mouseout,{
+    data_of_hover$hoverFeature  <- NULL
+  })
 # left_inches <-  max(strwidth(active_data()@data [,'area_id'], "inch")+0.4, na.rm = TRUE)
 bar_legend_x <- 6
 bar_legend_y <- 100
@@ -269,7 +271,7 @@ output$barplot=renderPlot({
                 border='#ffffff',
                 axisnames=FALSE,
                 las=1,
-                main="Tree coverage percentage:\nGreater Sydney (full study region)\n  ",
+                main="Tree coverage percentage:\n(full study region)\n  ",
                 legend.text=c("Public","Private","Other"),
                 args.legend=list(bty = "n",
                                  horiz=TRUE,

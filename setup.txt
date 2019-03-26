@@ -640,7 +640,7 @@ FROM (SELECT 'FeatureCollection' AS type,
 COPY um_2016_pp_sa1_not_urban_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_sa1_not_urban.geojson';
 COPY um_2016_pp_lga_not_urban_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_lga_not_urban.geojson';
 COPY um_2016_pp_ssc_not_urban_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_ssc_not_urban.geojson';
-COPY um_2016_pp_overall_urban TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_overall_not_urban.csv' CSV DELIMITER ',' HEADER;
+COPY um_2016_pp_overall_not_urban TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_overall_not_urban.csv' CSV DELIMITER ',' HEADER;
 
 
 \q
