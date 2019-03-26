@@ -90,7 +90,7 @@ SELECT sa1_main16,
        100.0 * a.aranytree_private/NULLIF(a.fullarea_private_sqm,0) AS peranytree_private,
        100.0 * a.aranytree_other  /NULLIF(a.fullarea_other_sqm  ,0) AS peranytree_other,
        fullarea_sqm * 10^(-6) AS fullarea_sqkm,
-       area_albers_sqkm  AS area_sqkm,
+       area_sqm * 10^(-6) AS area_sqkm,
        ST_Transform(abs.geom,4326) AS geom 
 FROM
  (SELECT sa1_main16,
@@ -100,7 +100,8 @@ FROM
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Public') , 0)  AS fullarea_public_sqm,
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Private'), 0)  AS fullarea_private_sqm,
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Other')  , 0)  AS fullarea_other_sqm,
-         SUM(fullarea) AS fullarea_sqm
+         SUM(fullarea) AS fullarea_sqm,
+         SUM(shape_area) AS area_sqm
   FROM mmb_2016_pp_epsg4326
   WHERE fularratio > 0.9
   GROUP BY sa1_main16) a
@@ -119,7 +120,7 @@ SELECT a.lga_name17 AS lga,
        100.0 * a.aranytree_private/NULLIF(a.fullarea_private_sqm,0) AS peranytree_private,
        100.0 * a.aranytree_other  /NULLIF(a.fullarea_other_sqm  ,0) AS peranytree_other,
        fullarea_sqm * 10^(-6) AS fullarea_sqkm,
-       area_albers_sqkm  AS area_sqkm,
+       area_sqm * 10^(-6) AS area_sqkm,
        ST_Transform(abs.geom,4326) AS geom 
 FROM
  (SELECT lga_code17,
@@ -130,7 +131,8 @@ FROM
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Public') , 0)  AS fullarea_public_sqm,
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Private'), 0)  AS fullarea_private_sqm,
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Other')  , 0)  AS fullarea_other_sqm,
-         SUM(fullarea) AS fullarea_sqm
+         SUM(fullarea) AS fullarea_sqm,
+         SUM(shape_area) AS area_sqm
   FROM mmb_2016_pp_epsg4326
   WHERE fularratio > 0.9
   GROUP BY lga_code17,lga_name17) a
@@ -147,7 +149,7 @@ SELECT a.ssc_name16 AS ssc,
        100.0 * a.aranytree_private/NULLIF(a.fullarea_private_sqm,0) AS peranytree_private,
        100.0 * a.aranytree_other  /NULLIF(a.fullarea_other_sqm  ,0) AS peranytree_other,
        fullarea_sqm * 10^(-6) AS fullarea_sqkm,
-       area_albers_sqkm AS area_sqkm,
+       area_sqm * 10^(-6) AS area_sqkm,
        ST_Transform(abs.geom,4326) AS geom 
 FROM
  (SELECT ssc_code16,
@@ -158,7 +160,8 @@ FROM
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Public') , 0)  AS fullarea_public_sqm,
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Private'), 0)  AS fullarea_private_sqm,
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Other')  , 0)  AS fullarea_other_sqm,
-         SUM(fullarea) AS fullarea_sqm
+         SUM(fullarea) AS fullarea_sqm,
+         SUM(shape_area) AS area_sqm
   FROM mmb_2016_pp_epsg4326
   WHERE fularratio > 0.9
   GROUP BY ssc_code16,ssc_name16) a
@@ -176,7 +179,8 @@ SELECT 'study_region'::text AS study_region,
        ROUND((100.0 * a.aranytree_public /NULLIF(a.fullarea_public_sqm ,0))::numeric,2) AS peranytree_public,
        ROUND((100.0 * a.aranytree_private/NULLIF(a.fullarea_private_sqm,0))::numeric,2) AS peranytree_private,
        ROUND((100.0 * a.aranytree_other  /NULLIF(a.fullarea_other_sqm  ,0))::numeric,2) AS peranytree_other,
-       fullarea_sqm * 10^(-6) AS fullarea_sqkm
+       fullarea_sqm * 10^(-6) AS fullarea_sqkm,
+       area_sqm * 10^(-6) AS area_sqkm
 FROM (SELECT 
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Public') , 0) AS aranytree_public,
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Private'), 0) AS aranytree_private,
@@ -184,7 +188,8 @@ FROM (SELECT
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Public') , 0)  AS fullarea_public_sqm,
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Private'), 0)  AS fullarea_private_sqm,
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Other')  , 0)  AS fullarea_other_sqm,
-         SUM(fullarea) AS fullarea_sqm
+         SUM(fullarea) AS fullarea_sqm,
+         SUM(shape_area) AS area_sqm
   FROM mmb_2016_pp_epsg4326
   WHERE fularratio > 0.9) a;
 
@@ -552,7 +557,7 @@ SELECT 'study_region'::text AS study_region,
        ROUND((100.0 * a.aranytree_private/NULLIF(a.fullarea_private_sqm,0))::numeric,2) AS peranytree_private,
        ROUND((100.0 * a.aranytree_other  /NULLIF(a.fullarea_other_sqm  ,0))::numeric,2) AS peranytree_other,
        fullarea_sqm * 10^(-6) AS fullarea_sqkm,
-       area_sqm * 10^(-6) AS area_sqkm,
+       area_sqm * 10^(-6) AS area_sqkm
 FROM (SELECT 
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Public') , 0) AS aranytree_public,
          COALESCE(SUM(aranytree) FILTER (WHERE public_private = 'Private'), 0) AS aranytree_private,
@@ -561,7 +566,7 @@ FROM (SELECT
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Private'), 0)  AS fullarea_private_sqm,
          COALESCE(SUM(fullarea) FILTER (WHERE public_private = 'Other')  , 0)  AS fullarea_other_sqm,
          SUM(fullarea) AS fullarea_sqm,
-         SUM(shape_area) AS area_sqm,
+         SUM(shape_area) AS area_sqm
   FROM mmb_2016_pp_epsg4326
   WHERE fularratio > 0.9
     AND mua_ind = 0) a;
@@ -632,10 +637,10 @@ FROM (SELECT 'FeatureCollection' AS type,
             FROM um_2016_pp_ssc_not_urban_epsg4326) AS f) AS fc;            
             
 -- Output geojson files            
-COPY um_2016_pp_sa1_not_urban_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_sa1_urban.geojson';
-COPY um_2016_pp_lga_not_urban_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_lga_urban.geojson';
-COPY um_2016_pp_ssc_not_urban_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_ssc_urban.geojson';
-COPY um_2016_pp_overall_urban TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_overall_urban.csv' CSV DELIMITER ',' HEADER;
+COPY um_2016_pp_sa1_not_urban_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_sa1_not_urban.geojson';
+COPY um_2016_pp_lga_not_urban_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_lga_not_urban.geojson';
+COPY um_2016_pp_ssc_not_urban_geojson TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_ssc_not_urban.geojson';
+COPY um_2016_pp_overall_urban TO 'D:/urban_monitor/um_2016_vis/um_2016_pp_overall_not_urban.csv' CSV DELIMITER ',' HEADER;
 
 
 \q

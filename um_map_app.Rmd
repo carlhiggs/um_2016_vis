@@ -52,14 +52,19 @@ Column {data-width=600}
 ### Map (<i>click region of interest for details</i>)
 ```{r}
 area_list <-  c(suburb = 'ssc', LGA = 'lga')
+# load geojson data
 active_data <- reactive({
                          # construct file name based on filter selection
                          file<- paste0('um_2016_pp_',area_list[input$area_scale],'_',gsub(" ", "_",input$urban_filter),'_simplified.geojson')
-                         # print(paste(file))
                          active_data <- geojson_read(file,
                                                      what = "sp",
                                                      stringsAsFactors=FALSE)
-                         # print(head(active_data))
+                         })
+# load overall region summary
+active_summary <- reactive({
+                         # construct file name based on filter selection
+                         file<- paste0('um_2016_pp_overall','_',gsub(" ", "_",input$urban_filter),'.csv')
+                         active_summary <- read.csv(file, header = TRUE)
                          })
 server <- function(input, output) {
 
@@ -247,7 +252,6 @@ observeEvent(input$map_shape_mouseover,{
     data_of_hover$hoverFeature[1] <- substring(toString(data_of_hover$hoverFeature[1]),1,nchar(data_of_hover$hoverFeature[1])-5)
   })
 
-um_2016_overall <- read.csv("um_2016_pp_overall.csv", header = TRUE)
 # left_inches <-  max(strwidth(active_data()@data [,'area_id'], "inch")+0.4, na.rm = TRUE)
 bar_legend_x <- 6
 bar_legend_y <- 100
@@ -258,7 +262,7 @@ colours <- c('#7fc97f','#beaed4','#fdc086')
 output$barplot=renderPlot({
     area_of_interest=data_of_hover$hoverFeature[1]
     if(is.null(area_of_interest)){
-        barplot(t(as.matrix(um_2016_overall[,c('peranytree_public_total','peranytree_private_total','peranytree_other_total')])) ,
+        barplot(t(as.matrix(active_summary()[,c('peranytree_public_total','peranytree_private_total','peranytree_other_total')])) ,
                 horiz=TRUE,
                 xlim = c(0,100),
                 col=c('#7fc97f','#beaed4','#fdc086'),
@@ -297,7 +301,7 @@ output$barplot=renderPlot({
     area_of_interest=data_of_hover$hoverFeature[1]
     # print(area_of_interest)
     if(is.null(area_of_interest)){
-        area_stats=as.numeric(um_2016_overall[,c('peranytree_public','peranytree_private','peranytree_other')])
+        area_stats=as.numeric(active_summary()[,c('peranytree_public','peranytree_private','peranytree_other')])
         area_stats[is.na(area_stats)]<- 0
         area_labels = c('public','private','other')
         pie(x = area_stats,
