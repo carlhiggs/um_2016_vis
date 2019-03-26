@@ -78,7 +78,7 @@ output$map <-  renderLeaflet({
   # active_data()@data <- active_data()@data[order(active_data()@data$peranytree_total),]
 
   legend_domain <- range(0,100)
-  pal <- colorNumeric(palette = "RdYlGn", domain = c(0,max(active_data()@data$peranytree_total)))
+  pal <- colorNumeric(palette = "RdYlGn", domain = c(0,max(active_data()@data[,3:8],na.rm=TRUE)))
   # pal <- colorBin(palette = "RdYlGn", domain=legend_domain, bins = 7, pretty = TRUE,
   #                 na.color = "#808080", alpha = FALSE, reverse = FALSE,
   #                 right = TRUE)
@@ -235,7 +235,7 @@ round(active_data()$peranytree_total,1),"%",
     addLegend("bottomright", 
               pal = pal, 
               values = legend_domain,
-              title = "Total % tree coverage",
+              title = "% tree coverage",
               opacity = 0.6)%>% 
     hideGroup(overlay)
   
@@ -325,7 +325,7 @@ ui <- fluidPage(
   
   # selectInput("var", label = "Select a variable", choices = c('peranytree_public','peranytree_private','peranytree_other','peranytree_total')),
   br(),
-  column(6,tags$style(type = "text/css", "#map {height: calc(100vh - 80px) !important;}"),leafletOutput("map")),
+  column(8,tags$style(type = "text/css", "#map {height: calc(100vh - 80px) !important;}"),leafletOutput("map")),
   column(4,plotOutput("barplot", height ="200px",width="300px"),plotOutput("pieplot", height="300px", width="300px")),
   br()
   
