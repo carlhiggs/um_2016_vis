@@ -78,7 +78,7 @@ output$map <-  renderLeaflet({
   # active_data()@data <- active_data()@data[order(active_data()@data$peranytree_total),]
 
   legend_domain <- range(0,100)
-  pal <- colorNumeric(palette = "RdYlGn", domain = active_data()$estimated_population)
+  pal <- colorNumeric(palette = "RdYlGn", domain = c(0,max(active_data()@data$peranytree_total)))
   # pal <- colorBin(palette = "RdYlGn", domain=legend_domain, bins = 7, pretty = TRUE,
   #                 na.color = "#808080", alpha = FALSE, reverse = FALSE,
   #                 right = TRUE)
@@ -152,7 +152,7 @@ round(active_data()$peranytree_total,1),"%",
 '</td></tr><tr><td class="indicator">',
 'Total area (km<sup>2</sup>)',
 '</td><td class="result">',
- active_data()$area_albers_sqkm,
+ active_data()$area_sqkm,
 '</td></tr><tr><td class="note" colspan="2">',
 '* only data coverage area is used as basis for percentage calculations.<br> Modified Mesh Blocks upon which LGA estimates are based were restricted to include only those with data coverage of 90% or greater',
 '</td></tr></table>')
@@ -322,16 +322,18 @@ output$barplot=renderPlot({
   })
   }
 ui <- fluidPage(
+  
   # selectInput("var", label = "Select a variable", choices = c('peranytree_public','peranytree_private','peranytree_other','peranytree_total')),
   br(),
-  column(8,leafletOutput("map")),
-  column(4,plotOutput("barplot", height ="200px",width="300px"),plotOutput("pieplot", width="300px")),
+  column(6,tags$style(type = "text/css", "#map {height: calc(100vh - 80px) !important;}"),leafletOutput("map")),
+  column(4,plotOutput("barplot", height ="200px",width="300px"),plotOutput("pieplot", height="300px", width="300px")),
   br()
+  
+  
 )
 
 shinyApp(ui = ui, server = server)
 ```
-
 
 Reproducible Script
 ===================================== 
