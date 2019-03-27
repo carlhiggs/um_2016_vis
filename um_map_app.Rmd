@@ -4,7 +4,6 @@ output:
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
-    social: [ "menu" ]
     source_code: embed
     theme: flatly
 runtime: shiny
@@ -31,7 +30,7 @@ library(leaflet)
 library(geojsonio)
 library(knitr)
 library(shiny)
-library(leaflet.esri)
+# library(leaflet.esri)
 library(promises)
 library(future)
 
@@ -48,7 +47,9 @@ Map
 
 Sidebar {.sidebar} 
 ----------------------------
-An interactive visualisation of tree coverage for local government areas (LGAs) in Sydney, detailing percent on public, private or other land.  Based on analysis of modified mesh block data derived from Urban Monitor imagery for 2016. Centre for Urban Resarch, RMIT 2019.
+An interactive visualisation of tree coverage for Sydney, detailing the differing contribution of public and private land. Based on analysis of modified mesh block data and Urban Monitor™ data derived from 2016 aerial  imagery.  
+
+Clean Air and Urban Landscapes Hub, 2019.
 
 ```{r, shiny_in}
 # shiny inputs defined here
@@ -107,7 +108,7 @@ output$map <-  renderLeaflet({
   # active_data()@data <- active_data()@data[order(active_data()@data$peranytree_total),]
 
   legend_domain <- range(0,100)
-  pal <- colorNumeric(palette = "RdYlGn", domain = c(0,max(active_data()@data[,3:8],na.rm=TRUE)))
+  pal <- colorNumeric(palette = "Purples", domain = c(0,max(active_data()@data[,3:8],na.rm=TRUE)))
   # pal <- colorBin(palette = "RdYlGn", domain=legend_domain, bins = 7, pretty = TRUE,
   #                 na.color = "#808080", alpha = FALSE, reverse = FALSE,
   #                 right = TRUE)
@@ -135,55 +136,34 @@ output$map <-  renderLeaflet({
 '.tg td{font-family:Arial, sans-serif;font-size:14px;padding:0px 10px;overflow:hidden;word-break:normal;}',
 '.tg .string_result{font-weight:bold;text-align:left;vertical-align:top}',
 '.tg .indicator{font-style:italic;border-color:#efefef;text-align:left;vertical-align:top}',
-'.tg .subindicator{text-align:right;vertical-align:top}',
+'.tg .subindicator{text-align:left;vertical-align:top}',
 '.tg .area{font-weight:bold;text-align:left;vertical-align:top}',
 '.tg .result{text-align:right;vertical-align:middle}',
 '.tg .note{font-style:italic;font-size:xx-small;text-align:left;vertical-align:top}',
 '</style>',
 '<table class="tg"><tr><td class="area" colspan="2">',
 active_data()$area_id,
-'</td></tr><tr><td class="indicator" colspan="2">',
-'Tree coverage %',
-'</td></tr><tr><td class="tg-xolv">',
+'</td></tr><tr colspan="2"><td>&nbsp</td></tr><tr><td class="indicator" colspan="2">',
+'Tree coverage % *',
+'</td></tr><tr><td class="subindicator">',
+'... total',
+'</td><td class="result">',
+round(active_data()$peranytree_total,1),"%",
+'</td></tr><tr><td class="subindicator">',
 '... on public land',
  '</td><td class="result">',
 round(active_data()$peranytree_public,1),"%",
-'</td></tr><tr><td class="tg-xolv">',
-'...on private land',
+'</td></tr><tr><td class="subindicator">',
+'... on private land',
 '</td><td class="result">',
 round(active_data()$peranytree_private,1),"%",
-'</td></tr><tr><td class="tg-xolv">',
-'...on other land',
+'</td></tr><tr><td class=".subindicator">',
+'... on other land',
 '</td><td class="result">',
 round(active_data()$peranytree_other,1),"%",
 '</td></tr><tr colspan="2"><td>&nbsp</td></tr><tr><td class="indicator" colspan="2">',
-'Tree coverage %, relative to LGA area*',
-'</td></tr><tr><td class="tg-xolv">',
-'... on public land',
- '</td><td class="result">',
-round(active_data()$peranytree_public_total,1),"%",
-'</td></tr><tr><td class="tg-xolv">',
-'...on private land',
-'</td><td class="result">',
-round(active_data()$peranytree_private_total,1),"%",
-'</td></tr><tr><td class="tg-xolv">',
-'...on other land',
-'</td><td class="result">',
-round(active_data()$peranytree_other_total,1),"%",
-'</td></tr><tr><td class="tg-xolv">',
-'... overall',
-'</td><td class="result">',
-round(active_data()$peranytree_total,1),"%",
-'</td></tr><tr colspan="2"><td>&nbsp</td></tr><tr><td class="indicator">',
-'Data coverage area (km<sup>2</sup>)*',
-'</td><td class="result">',
- active_data()$fullarea_sqkm,
-'</td></tr><tr><td class="indicator">',
-'Total area (km<sup>2</sup>)',
-'</td><td class="result">',
- active_data()$area_sqkm,
 '</td></tr><tr><td class="note" colspan="2">',
-'* only data coverage area is used as basis for percentage calculations.<br> Modified Mesh Blocks upon which area estimates are based were restricted to include only those with data coverage of more than 90%',
+'* Only data coverage area is used as basis for percentage calculations.  Modified Mesh Blocks upon which tree cover estimates of the selected area scale are based were restricted to include only those with data coverage of more than 90%.',
 '</td></tr></table>')
    
   
@@ -256,8 +236,8 @@ round(active_data()$peranytree_total,1),"%",
                options = pathOptions(clickable = FALSE),
                group=overlay[3])%>%  
     # define layers and layers tool bar
-    addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/UCL/MapServer',group=overlay[1]) %>%
-    addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/SUA/MapServer',group=overlay[2]) %>%
+    # addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/UCL/MapServer',group=overlay[1]) %>%
+    # addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/SUA/MapServer',group=overlay[2]) %>%
     # addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/LGA/MapServer',group=overlay[3]) %>%
 
     # addWMSTiles("http://geoserver.nationalmap.nicta.com.au/admin_bnds_abs/ows",
@@ -265,7 +245,7 @@ round(active_data()$peranytree_total,1),"%",
     #             options = WMSTileOptions(format = "image/png", transparent = TRUE),
     #             attribution = "ABS 2011, ational Map, Creative Commons Attribution 2.5 Australia (CC BY 2.5 AU)") %>%
     addLayersControl(baseGroups = groupNames,
-                     overlayGroups = overlay,
+                     overlayGroups = overlay[3],
                     options = layersControlOptions(collapsed = TRUE))%>% ## display legend by default
     addScaleBar(position = "bottomleft", options = scaleBarOptions()) %>%
     addLegend("bottomright", 
@@ -324,7 +304,7 @@ output$barplot=renderPlot({
                 args.legend=list(bty = "n",
                                  horiz=TRUE,
                                  yjust=0),
-                sub = "... overall, by public, private or other land"
+                sub = "... overall cover by public, private or other land"
                 )
     }
   })
@@ -334,7 +314,7 @@ output$barplot=renderPlot({
     area_of_interest=data_of_hover$hoverFeature[1]
     # print(area_of_interest)
     if(is.null(area_of_interest)){
-        area_stats=as.numeric(active_summary()[,c('peranytree_public','peranytree_private','peranytree_other')])
+        area_stats=as.numeric(active_summary()[,c('peranytree_public_total','peranytree_private_total','peranytree_other_total')])
         area_stats[is.na(area_stats)]<- 0
         area_labels = c('public','private','other')
         pie(x = area_stats,
@@ -342,10 +322,10 @@ output$barplot=renderPlot({
            col=colours,
             #main="Tree coverage %\nSydney",
             border = '#ffffff',
-           sub = "... on public, private or other land")
+           sub = "... relatrive contribution of land type to tree cover")
            #legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
     }else{
-        area_stats=as.numeric(active_data()@data[active_data()@data[,'area_id']==area_of_interest,c('peranytree_public','peranytree_private','peranytree_other')])
+        area_stats=as.numeric(active_data()@data[active_data()@data[,'area_id']==area_of_interest,c('peranytree_public_total','peranytree_private_total','peranytree_other_total')])
         area_stats[is.na(area_stats)]<- 0
         area_labels = c('public','private','other')
         pie(x = area_stats,
@@ -353,7 +333,7 @@ output$barplot=renderPlot({
            col=colours,
            #main=toString(area_of_interest),
            border = NA,
-           sub = "... on public, private or other land")
+           sub = "... relatrive contribution of land type to tree cover")
            #legend('top', area_labels, cex = 0.7, fill = colours, border= "white",bty = "n", horiz=TRUE)
     }
   })
@@ -371,8 +351,3 @@ ui <- fluidPage(
 
 shinyApp(ui = ui, server = server)
 ```
-
-About
-===================================== 
-
-Insert blurb about the UM project, acknowledgements, stakeholders etc
