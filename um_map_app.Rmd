@@ -30,7 +30,7 @@ library(leaflet)
 library(geojsonio)
 library(knitr)
 library(shiny)
-# library(leaflet.esri)
+library(leaflet.esri)
 library(promises)
 library(future)
 
@@ -115,18 +115,18 @@ output$map <-  renderLeaflet({
 
   
   groupNames <- c(
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Public  land </strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Private land </strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Other   land </strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Public  land, relative to all land</strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Private land, relative to all land</strong></span>"),
-                  paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Other   land, relative to all land</strong></span>"),
+                  # paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Public  land </strong></span>"),
+                  # paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Private land </strong></span>"),
+                  # paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Other   land </strong></span>"),
+                  # paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Public  land, relative to all land</strong></span>"),
+                  # paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Private land, relative to all land</strong></span>"),
+                  # paste0("<span style='color: #000000; font-size: 11pt'><strong>Tree coverage % on Other   land, relative to all land</strong></span>"),
                   paste0("<span style='color: #000000; font-size: 11pt'><strong>Overall tree coverage %</strong></span>")
                   )
   overlay <- c(
+                     paste0('Local Government Areas (LGA, 2016)'),
                      paste0('Urban Centres/Localities (UCL, 2016)'),
-                     paste0('Significant Urban Area (SUA, 2016)'),
-                     paste0('Local Government Areas (LGA, 2016)')
+                     paste0('Significant Urban Area (SUA, 2016)')
                      )
   # create area_popup
  
@@ -172,72 +172,72 @@ round(active_data()$peranytree_other,1),"%",
   leaflet() %>% 
     # leaflet(data = active_data()) %>%
     addProviderTiles("CartoDB.Positron") %>%
-   addPolygons(data = active_data(),
-              layerId =  ~paste0(area_id,'_spub'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_public),
-              weight = 1,
-              popup = area_popup,
-              group=groupNames[1]
-              ) %>%
-   addPolygons(data = active_data(),
-               layerId = ~paste0(area_id,'_spri'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_private),
-              weight = 1,
-              popup = area_popup,
-              group=groupNames[2]
-              ) %>%
-   addPolygons(data = active_data(),
-               layerId = ~paste0(area_id,'_soth'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_other),
-              weight = 1,
-              popup = area_popup,
-              group=groupNames[3]
-              ) %>%
-              
-   addPolygons(data = active_data(),
-              layerId =  ~paste0(area_id,'_tpub'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_public_total),
-              weight = 1,
-              popup = area_popup,
-              group=groupNames[4]
-              ) %>%
-   addPolygons(data = active_data(),
-               layerId = ~paste0(area_id,'_tpri'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_private_total),
-              weight = 1,
-              popup = area_popup,
-              group=groupNames[5]
-              ) %>%
-   addPolygons(data = active_data(),
-               layerId = ~paste0(area_id,'_toth'),
-              fillOpacity = 0.7,
-              color = ~pal(peranytree_other_total),
-              weight = 1,
-              popup = area_popup,
-              group=groupNames[6]
-              ) %>%
+   # addPolygons(data = active_data(),
+   #            layerId =  ~paste0(area_id,'_spub'),
+   #            fillOpacity = 0.7,
+   #            color = ~pal(peranytree_public),
+   #            weight = 1,
+   #            popup = area_popup,
+   #            group=groupNames[1]
+   #            ) %>%
+   # addPolygons(data = active_data(),
+   #             layerId = ~paste0(area_id,'_spri'),
+   #            fillOpacity = 0.7,
+   #            color = ~pal(peranytree_private),
+   #            weight = 1,
+   #            popup = area_popup,
+   #            group=groupNames[2]
+   #            ) %>%
+   # addPolygons(data = active_data(),
+   #             layerId = ~paste0(area_id,'_soth'),
+   #            fillOpacity = 0.7,
+   #            color = ~pal(peranytree_other),
+   #            weight = 1,
+   #            popup = area_popup,
+   #            group=groupNames[3]
+   #            ) %>%
+   #            
+   # addPolygons(data = active_data(),
+   #            layerId =  ~paste0(area_id,'_tpub'),
+   #            fillOpacity = 0.7,
+   #            color = ~pal(peranytree_public_total),
+   #            weight = 1,
+   #            popup = area_popup,
+   #            group=groupNames[4]
+   #            ) %>%
+   # addPolygons(data = active_data(),
+   #             layerId = ~paste0(area_id,'_tpri'),
+   #            fillOpacity = 0.7,
+   #            color = ~pal(peranytree_private_total),
+   #            weight = 1,
+   #            popup = area_popup,
+   #            group=groupNames[5]
+   #            ) %>%
+   # addPolygons(data = active_data(),
+   #             layerId = ~paste0(area_id,'_toth'),
+   #            fillOpacity = 0.7,
+   #            color = ~pal(peranytree_other_total),
+   #            weight = 1,
+   #            popup = area_popup,
+   #            group=groupNames[6]
+   #            ) %>%
    addPolygons(data = active_data(),
                layerId = ~paste0(area_id,'_ttot'),
                fillOpacity = 0.7, 
                color = ~pal(peranytree_total), 
                weight = 1, 
                popup = area_popup,
-               group = groupNames[7])  %>%
+               group = groupNames[1])  %>%
    addPolygons(data = value(um_2016_pp_lga_all),
                fillColor = "white",  ## Colour based on pilot Liveability estimate
                fillOpacity = 0,             ## how transparent do you want the polygon to be?
                color = "black",            ## color of borders 
                weight = 3,                  ## width of borders
                options = pathOptions(clickable = FALSE),
-               group=overlay[3])%>%  
+               group=overlay[1])%>%  
     # define layers and layers tool bar
-    # addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/UCL/MapServer',group=overlay[1]) %>%
-    # addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/SUA/MapServer',group=overlay[2]) %>%
+    addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/UCL/MapServer',group=overlay[2]) %>%
+    addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/SUA/MapServer',group=overlay[3]) %>%
     # addEsriDynamicMapLayer('https://geo.abs.gov.au/arcgis/rest/services/ASGS2016/LGA/MapServer',group=overlay[3]) %>%
 
     # addWMSTiles("http://geoserver.nationalmap.nicta.com.au/admin_bnds_abs/ows",
@@ -245,7 +245,7 @@ round(active_data()$peranytree_other,1),"%",
     #             options = WMSTileOptions(format = "image/png", transparent = TRUE),
     #             attribution = "ABS 2011, ational Map, Creative Commons Attribution 2.5 Australia (CC BY 2.5 AU)") %>%
     addLayersControl(baseGroups = groupNames,
-                     overlayGroups = overlay[3],
+                     overlayGroups = overlay,
                     options = layersControlOptions(collapsed = TRUE))%>% ## display legend by default
     addScaleBar(position = "bottomleft", options = scaleBarOptions()) %>%
     addLegend("bottomright", 
