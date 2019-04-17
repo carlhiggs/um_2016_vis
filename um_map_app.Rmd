@@ -256,13 +256,10 @@ output$barplot=renderPlot({
   })
   }
 ui <- fluidPage(
-  
   br(),
-  column(8,tags$style(type = "text/css", "#map {height: calc(100vh - 80px) !important;}"),leafletOutput("map")),
+  column(8,tags$style(type = "text/css", "#map {height: calc(100vh - 80px) !important;}"),leafletOutput("map",height = "95vh")),
   column(4,plotOutput("barplot", height ="200px",width="300px"),plotOutput("pieplot", height="300px", width="300px")),
   br()
-  
-  
 )
 
 shinyApp(ui = ui, server = server)
